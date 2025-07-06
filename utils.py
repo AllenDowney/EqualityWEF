@@ -8,6 +8,8 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
+
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy.stats import beta, norm
 
@@ -672,19 +674,23 @@ def add_logo(filename="logo-hq-small.png", location=(1.0, -0.35), size=(0.5, 0.2
 
     # Create an inset axis in the given location
     ax = plt.gca()
+    fig = ax.figure
     ax_inset = inset_axes(
         ax,
         width=size[0],
         height=size[1],
         loc="lower right",
         bbox_to_anchor=location,
-        bbox_transform=ax.transAxes,
+        bbox_transform=fig.transFigure,
         borderpad=0,
     )
 
     # Display the logo
     ax_inset.imshow(logo)
     ax_inset.axis("off")
+    
+    # Restore the original axes as current
+    plt.sca(ax)
 
     return ax_inset
 
@@ -701,8 +707,9 @@ def add_subtext(text, x=0, y=-0.35):
         The text object
     """
     ax = plt.gca()
+    fig = ax.figure
     return plt.figtext(
-        x, y, text, ha="left", va="bottom", fontsize=8, transform=ax.transAxes
+        x, y, text, ha="left", va="bottom", fontsize=8, transform=fig.transFigure
     )
 
 
@@ -917,197 +924,280 @@ def plot_estimates_by_age_gender(summary, age_map, group_name_map, **options):
             plot_estimates(data, gender_label, **options)
 
 
-
 iso_country_dict = {
-    'ALB': 'Albania',
-    'DZA': 'Algeria',
-    'AGO': 'Angola',
-    'ARG': 'Argentina',
-    'ARM': 'Armenia',
-    'AUS': 'Australia',
-    'AUT': 'Austria',
-    'AZE': 'Azerbaijan',
-    'BHR': 'Bahrain',
-    'BGD': 'Bangladesh',
-    'BRB': 'Barbados',
-    'BLR': 'Belarus',
-    'BEL': 'Belgium',
-    'BLZ': 'Belize',
-    'BEN': 'Benin',
-    'BTN': 'Bhutan',
-    'BOL': 'Bolivia',
-    'BIH': 'Bosnia-Herzegovina',
-    'BWA': 'Botswana',
-    'BRA': 'Brazil',
-    'BRN': 'Brunei',
-    'BGR': 'Bulgaria',
-    'BFA': 'Burkina Faso',
-    'BDI': 'Burundi',
-    'KHM': 'Cambodia',
-    'CMR': 'Cameroon',
-    'CAN': 'Canada',
-    'CPV': 'Cape Verde',
-    'TCD': 'Chad',
-    'CHL': 'Chile',
-    'CHN': 'China',
-    'COL': 'Colombia',
-    'COM': 'Comoros',
-    'COD': 'D.R. Congo',
-    'CRI': 'Costa Rica',
-    'CIV': "Côte D'Ivoire",
-    'HRV': 'Croatia',
-    'CYP': 'Cyprus',
-    'CZE': 'Czechia',
-    'DNK': 'Denmark',
-    'DOM': 'Dominican Republic',
-    'ECU': 'Ecuador',
-    'EGY': 'Egypt',
-    'SLV': 'El Salvador',
-    'EST': 'Estonia',
-    'SWZ': 'Eswatini',
-    'ETH': 'Ethiopia',
-    'FJI': 'Fiji',
-    'FIN': 'Finland',
-    'FRA': 'France',
-    'GMB': 'Gambia',
-    'GEO': 'Georgia',
-    'DEU': 'Germany',
-    'GHA': 'Ghana',
-    'GRC': 'Greece',
-    'GTM': 'Guatemala',
-    'GIN': 'Guinea',
-    'GUY': 'Guyana',
-    'HND': 'Honduras',
-    'HUN': 'Hungary',
-    'ISL': 'Iceland',
-    'IND': 'India',
-    'IDN': 'Indonesia',
-    'IRN': 'Iran',
-    'IRL': 'Ireland',
-    'ISR': 'Israel',
-    'ITA': 'Italy',
-    'JAM': 'Jamaica',
-    'JPN': 'Japan',
-    'JOR': 'Jordan',
-    'KAZ': 'Kazakhstan',
-    'KEN': 'Kenya',
-    'KWT': 'Kuwait',
-    'KGZ': 'Kyrgyzstan',
-    'LAO': 'Laos',
-    'LVA': 'Latvia',
-    'LBN': 'Lebanon',
-    'LSO': 'Lesotho',
-    'LBR': 'Liberia',
-    'LTU': 'Lithuania',
-    'LUX': 'Luxembourg',
-    'MDG': 'Madagascar',
-    'MYS': 'Malaysia',
-    'MDV': 'Maldives',
-    'MLI': 'Mali',
-    'MLT': 'Malta',
-    'MUS': 'Mauritius',
-    'MEX': 'Mexico',
-    'MDA': 'Moldova',
-    'MNG': 'Mongolia',
-    'MNE': 'Montenegro',
-    'MAR': 'Morocco',
-    'MOZ': 'Mozambique',
-    'NAM': 'Namibia',
-    'NPL': 'Nepal',
-    'NLD': 'Netherlands',
-    'NZL': 'New Zealand',
-    'NIC': 'Nicaragua',
-    'NER': 'Niger',
-    'NGA': 'Nigeria',
-    'MKD': 'North Macedonia',
-    'NOR': 'Norway',
-    'OMN': 'Oman',
-    'PAK': 'Pakistan',
-    'PAN': 'Panama',
-    'PRY': 'Paraguay',
-    'PER': 'Peru',
-    'PHL': 'Philippines',
-    'POL': 'Poland',
-    'PRT': 'Portugal',
-    'QAT': 'Qatar',
-    'ROU': 'Romania',
-    'RWA': 'Rwanda',
-    'SAU': 'Saudi Arabia',
-    'SEN': 'Senegal',
-    'SRB': 'Serbia',
-    'SLE': 'Sierra Leone',
-    'SGP': 'Singapore',
-    'SVK': 'Slovakia',
-    'SVN': 'Slovenia',
-    'ZAF': 'South Africa',
-    'KOR': 'South Korea',
-    'ESP': 'Spain',
-    'LKA': 'Sri Lanka',
-    'SDN': 'Sudan',
-    'SUR': 'Suriname',
-    'SWE': 'Sweden',
-    'CHE': 'Switzerland',
-    'TJK': 'Tajikistan',
-    'THA': 'Thailand',
-    'TLS': 'Timor-Leste',
-    'TGO': 'Togo',
-    'TUN': 'Tunisia',
-    'TUR': 'Türkiye',
-    'UGA': 'Uganda',
-    'UKR': 'Ukraine',
-    'ARE': 'United Arab Emirates',
-    'GBR': 'United Kingdom',
-    'TZA': 'Tanzania',
-    'USA': 'United States',
-    'URY': 'Uruguay',
-    'UZB': 'Uzbekistan',
-    'VUT': 'Vanuatu',
-    'VNM': 'Vietnam',
-    'ZMB': 'Zambia',
-    'ZWE': 'Zimbabwe',
+    "ALB": "Albania",
+    "DZA": "Algeria",
+    "AGO": "Angola",
+    "ARG": "Argentina",
+    "ARM": "Armenia",
+    "AUS": "Australia",
+    "AUT": "Austria",
+    "AZE": "Azerbaijan",
+    "BHR": "Bahrain",
+    "BGD": "Bangladesh",
+    "BRB": "Barbados",
+    "BLR": "Belarus",
+    "BEL": "Belgium",
+    "BLZ": "Belize",
+    "BEN": "Benin",
+    "BTN": "Bhutan",
+    "BOL": "Bolivia",
+    "BIH": "Bosnia-Herzegovina",
+    "BWA": "Botswana",
+    "BRA": "Brazil",
+    "BRN": "Brunei",
+    "BGR": "Bulgaria",
+    "BFA": "Burkina Faso",
+    "BDI": "Burundi",
+    "KHM": "Cambodia",
+    "CMR": "Cameroon",
+    "CAN": "Canada",
+    "CPV": "Cape Verde",
+    "TCD": "Chad",
+    "CHL": "Chile",
+    "CHN": "China",
+    "COL": "Colombia",
+    "COM": "Comoros",
+    "COD": "D.R. Congo",
+    "CRI": "Costa Rica",
+    "CIV": "Côte D'Ivoire",
+    "HRV": "Croatia",
+    "CYP": "Cyprus",
+    "CZE": "Czechia",
+    "DNK": "Denmark",
+    "DOM": "Dominican Republic",
+    "ECU": "Ecuador",
+    "EGY": "Egypt",
+    "SLV": "El Salvador",
+    "EST": "Estonia",
+    "SWZ": "Eswatini",
+    "ETH": "Ethiopia",
+    "FJI": "Fiji",
+    "FIN": "Finland",
+    "FRA": "France",
+    "GMB": "Gambia",
+    "GEO": "Georgia",
+    "DEU": "Germany",
+    "GHA": "Ghana",
+    "GRC": "Greece",
+    "GTM": "Guatemala",
+    "GIN": "Guinea",
+    "GUY": "Guyana",
+    "HND": "Honduras",
+    "HUN": "Hungary",
+    "ISL": "Iceland",
+    "IND": "India",
+    "IDN": "Indonesia",
+    "IRN": "Iran",
+    "IRL": "Ireland",
+    "ISR": "Israel",
+    "ITA": "Italy",
+    "JAM": "Jamaica",
+    "JPN": "Japan",
+    "JOR": "Jordan",
+    "KAZ": "Kazakhstan",
+    "KEN": "Kenya",
+    "KWT": "Kuwait",
+    "KGZ": "Kyrgyzstan",
+    "LAO": "Laos",
+    "LVA": "Latvia",
+    "LBN": "Lebanon",
+    "LSO": "Lesotho",
+    "LBR": "Liberia",
+    "LTU": "Lithuania",
+    "LUX": "Luxembourg",
+    "MDG": "Madagascar",
+    "MYS": "Malaysia",
+    "MDV": "Maldives",
+    "MLI": "Mali",
+    "MLT": "Malta",
+    "MUS": "Mauritius",
+    "MEX": "Mexico",
+    "MDA": "Moldova",
+    "MNG": "Mongolia",
+    "MNE": "Montenegro",
+    "MAR": "Morocco",
+    "MOZ": "Mozambique",
+    "NAM": "Namibia",
+    "NPL": "Nepal",
+    "NLD": "Netherlands",
+    "NZL": "New Zealand",
+    "NIC": "Nicaragua",
+    "NER": "Niger",
+    "NGA": "Nigeria",
+    "MKD": "North Macedonia",
+    "NOR": "Norway",
+    "OMN": "Oman",
+    "PAK": "Pakistan",
+    "PAN": "Panama",
+    "PRY": "Paraguay",
+    "PER": "Peru",
+    "PHL": "Philippines",
+    "POL": "Poland",
+    "PRT": "Portugal",
+    "QAT": "Qatar",
+    "ROU": "Romania",
+    "RWA": "Rwanda",
+    "SAU": "Saudi Arabia",
+    "SEN": "Senegal",
+    "SRB": "Serbia",
+    "SLE": "Sierra Leone",
+    "SGP": "Singapore",
+    "SVK": "Slovakia",
+    "SVN": "Slovenia",
+    "ZAF": "South Africa",
+    "KOR": "South Korea",
+    "ESP": "Spain",
+    "LKA": "Sri Lanka",
+    "SDN": "Sudan",
+    "SUR": "Suriname",
+    "SWE": "Sweden",
+    "CHE": "Switzerland",
+    "TJK": "Tajikistan",
+    "THA": "Thailand",
+    "TLS": "Timor-Leste",
+    "TGO": "Togo",
+    "TUN": "Tunisia",
+    "TUR": "Türkiye",
+    "UGA": "Uganda",
+    "UKR": "Ukraine",
+    "ARE": "United Arab Emirates",
+    "GBR": "United Kingdom",
+    "TZA": "Tanzania",
+    "USA": "United States",
+    "URY": "Uruguay",
+    "UZB": "Uzbekistan",
+    "VUT": "Vanuatu",
+    "VNM": "Vietnam",
+    "ZMB": "Zambia",
+    "ZWE": "Zimbabwe",
     # Additional countries not in original list
-    'ABW': 'Aruba',
-    'CAF': 'Central African Republic',
-    'COG': 'Congo',
-    'CUB': 'Cuba',
-    'CYM': 'Cayman Islands',
-    'ERI': 'Eritrea',
-    'GAB': 'Gabon',
-    'GNB': 'Guinea-Bissau',
-    'GNQ': 'Equatorial Guinea',
-    'GUM': 'Guam',
-    'HTI': 'Haiti',
-    'MAC': 'Macao',
-    'MMR': 'Myanmar',
-    'MRT': 'Mauritania',
-    'MWI': 'Malawi',
-    'NCL': 'New Caledonia',
-    'PNG': 'Papua New Guinea',
-    'PRI': 'Puerto Rico',
-    'PRK': 'North Korea',
-    'SSD': 'South Sudan',
-    'STP': 'São Tomé and Príncipe',
-    'SYC': 'Seychelles',
-    'SYR': 'Syria',
-    'TKM': 'Turkmenistan',
-    'TTO': 'Trinidad and Tobago',
-    'VEN': 'Venezuela',
-    'YEM': 'Yemen',
+    "ABW": "Aruba",
+    "CAF": "Central African Republic",
+    "COG": "Congo",
+    "CUB": "Cuba",
+    "CYM": "Cayman Islands",
+    "ERI": "Eritrea",
+    "GAB": "Gabon",
+    "GNB": "Guinea-Bissau",
+    "GNQ": "Equatorial Guinea",
+    "GUM": "Guam",
+    "HTI": "Haiti",
+    "MAC": "Macao",
+    "MMR": "Myanmar",
+    "MRT": "Mauritania",
+    "MWI": "Malawi",
+    "NCL": "New Caledonia",
+    "PNG": "Papua New Guinea",
+    "PRI": "Puerto Rico",
+    "PRK": "North Korea",
+    "SSD": "South Sudan",
+    "STP": "São Tomé and Príncipe",
+    "SYC": "Seychelles",
+    "SYR": "Syria",
+    "TKM": "Turkmenistan",
+    "TTO": "Trinidad and Tobago",
+    "VEN": "Venezuela",
+    "YEM": "Yemen",
+}
+
+oecd_country_dict = {
+    "AUS": "Australia",
+    "AUT": "Austria",
+    "BEL": "Belgium",
+    "CAN": "Canada",
+    "CHE": "Switzerland",
+    "CHL": "Chile",
+    "COL": "Colombia",
+    "CRI": "Costa Rica",
+    "CZE": "Czechia",
+    "DEU": "Germany",
+    "DNK": "Denmark",
+    "ESP": "Spain",
+    "EST": "Estonia",
+    "FIN": "Finland",
+    "FRA": "France",
+    "GBR": "United Kingdom",
+    "GRC": "Greece",
+    "HUN": "Hungary",
+    "IRL": "Ireland",
+    "ISL": "Iceland",
+    "ISR": "Israel",
+    "ITA": "Italy",
+    "JPN": "Japan",
+    "KOR": "South Korea",
+    "LTU": "Lithuania",
+    "LUX": "Luxembourg",
+    "LVA": "Latvia",
+    "MEX": "Mexico",
+    "NLD": "Netherlands",
+    "NOR": "Norway",
+    "NZL": "New Zealand",
+    "POL": "Poland",
+    "PRT": "Portugal",
+    "SVK": "Slovakia",
+    "SVN": "Slovenia",
+    "SWE": "Sweden",
+    "TUR": "Türkiye",
+    "USA": "United States",
 }
 
 
 def read_wef_file(filename):
+    """Read the WEF file and return a DataFrame.
+    
+    Args:
+        filename: name of the WEF file
+    """
     df = pd.read_csv(filename)
 
-    df['country'] = df['country'].replace({
-        'United States of America': 'United States',
-        'Brunei Darussalam': 'Brunei',
-        'Moldova, Republic of': 'Moldova',
-        'Congo, Democratic Republic of t': 'D.R. Congo',
-        'United Republic of Tanzania': 'Tanzania',
-        'Viet Nam': 'Vietnam',
-        'Bosnia and Herzegovina': 'Bosnia-Herzegovina',
-        'Lao PDR': 'Laos',
-    })
+    df["country"] = df["country"].replace(
+        {
+            "United States of America": "United States",
+            "Brunei Darussalam": "Brunei",
+            "Moldova, Republic of": "Moldova",
+            "Congo, Democratic Republic of t": "D.R. Congo",
+            "United Republic of Tanzania": "Tanzania",
+            "Viet Nam": "Vietnam",
+            "Bosnia and Herzegovina": "Bosnia-Herzegovina",
+            "Lao PDR": "Laos",
+        }
+    )
 
     return df
+
+
+def plot_revised_scores(df):
+    """Plot revised scores for countries.
+        
+    Args:
+        df: DataFrame with revised scores
+    """
+    n = len(df)
+    height = 15 * n / 100
+    fig, ax = plt.subplots(figsize=(6, height))
+    plt.hlines(
+        df["country"], df["score"], df["revised_score"], color=AIBM_COLORS["light_gray"]
+    )
+    plt.plot(df["score"], df["country"], "|", color=AIBM_COLORS["blue"])
+    plt.plot(df["revised_score"], df["country"], "<", color=AIBM_COLORS["blue"])
+    ax.invert_yaxis()
+
+    decorate(xlabel="primary Enrolment Score", ylim=[n + 1, -1])
+    add_title(
+        "Revised Scores Are Very Different For Many Countries", "Subtitle", y=1.01
+    )
+    add_subtext("Source: World Economic Forum", y=-0.05)
+    logo = add_logo(location=(1.0, -0.05))
+
+
+
+def plot_score_distributions(df, **options):
+    kde_options = dict(cut=0, bw_adjust=0.7)
+
+    sns.kdeplot(df['score'], label='WEF truncated scores', **kde_options)
+    sns.kdeplot(df['revised_score'], label='Revised symmetric scores', **kde_options)
+
+    decorate(**options)
+    add_subtext("Source: World Economic Forum", y=-0.25)
+    logo = add_logo(location=(1.0, -0.25))
