@@ -3,16 +3,17 @@ import pdfplumber
 import pandas as pd
 import re
 
-def extract_pdf_data(page_number, pdf_path):
+def extract_pdf_data(page_number, pattern):
     """Extract data from PDF using pdfplumber, print debug info, and return a dictionary of results."""
+    pdf_path = f"pages/page_{page_number:03d}.pdf"
     result = {
-        "country_name": None,
+        "country": None,
         "page_number": page_number,
-        "tert_ed_score": None,
-        "tert_ed_rank": None,
-        "tert_ed_diff": None,
-        "tert_ed_left": None,
-        "tert_ed_right": None,
+        "score": None,
+        "rank": None,
+        "diff": None,
+        "left": None,
+        "right": None,
     }
     with pdfplumber.open(pdf_path) as pdf:
         # Get the first page
@@ -28,28 +29,28 @@ def extract_pdf_data(page_number, pdf_path):
             line13 = lines[13]
 
         # To get the country name, extract everything before the first digit
-        country_match = re.match(r"^([^\d]+)", line13)
-        if country_match:
-            country_name = country_match.group(1).strip()
+        country_name = re.match(r"^([^\d]+)", line13)
+        if country_name:
+            country_name = country_name.group(1).strip()
             country_name = re.sub(r"\s*\(.*\)$", "", country_name).strip()
-            result["country_name"] = country_name
+            result["country"] = country_name
         else:
             print("Debug - failed to find country name in line 13")
         
-        # Extract tertiary education data
+        # Extract education data
         for i, line in enumerate(lines):
-            if 'tertiary education' in line.lower():
+            if pattern in line.lower():
                 parts = line.split()
                 if len(parts) >= 9:
                     try:
                         rank_str = parts[4]
-                        result["tert_ed_rank"] = int(''.join(filter(str.isdigit, rank_str)))
-                        result["tert_ed_score"] = float(parts[5])
-                        result["tert_ed_diff"] = float(parts[6])
-                        result["tert_ed_left"] = float(parts[7])
-                        result["tert_ed_right"] = float(parts[8])
+                        result["rank"] = int(''.join(filter(str.isdigit, rank_str)))
+                        result["score"] = float(parts[5])
+                        result["diff"] = float(parts[6])
+                        result["left"] = float(parts[7])
+                        result["right"] = float(parts[8])
                     except (ValueError, IndexError) as e:
-                        print(f"Error parsing tertiary education line: {e}")
+                        print(f"Parsing error: {e}")
                         print(f"Line: {line}")
                         print(f"Parts: {parts}")
                 break
@@ -59,10 +60,9 @@ def extract_pdf_data(page_number, pdf_path):
 if __name__ == "__main__":
     # Process pages
     results = []
-    for i in [117]:
-        filename = f"page_{i:03d}.pdf"
-        print(f"\nProcessing {filename}...")
-        data = extract_pdf_data(i, filename)
+    for page_number in [117]:
+        print(f"\nProcessing page {page_number}...")
+        data = extract_pdf_data(page_number, 'literacy')
         results.append(data)
     df = pd.DataFrame(results)
     print("\nDataFrame of extracted results:")
