@@ -1201,3 +1201,16 @@ def plot_score_distributions(df, **options):
     decorate(**options)
     add_subtext("Source: World Economic Forum", y=-0.25)
     logo = add_logo(location=(1.0, -0.25))
+
+
+def make_weights(column, label):
+    std = column.std() 
+    weights = pd.DataFrame(std, index=[label], columns=['std'])
+    weights['inv std'] = 0.01 / std
+    return weights
+
+def make_weight_table(table, label):
+    weights_orig = make_weights(table['score'], label)
+    weights_revised = make_weights(table['revised_score'], label)
+    weights = pd.concat([weights_orig, weights_revised], axis=1, keys=['original', 'revised'])
+    return weights
