@@ -924,7 +924,7 @@ def plot_estimates_by_age_gender(summary, age_map, group_name_map, **options):
             plot_estimates(data, gender_label, **options)
 
 
-iso_country_dict = {
+code_to_wef_country = {
     "ALB": "Albania",
     "DZA": "Algeria",
     "AGO": "Angola",
@@ -1101,7 +1101,7 @@ iso_country_dict = {
     "YEM": "Yemen",
 }
 
-oecd_country_dict = {
+code_to_wef_country_oecd = {
     "AUS": "Australia",
     "AUT": "Austria",
     "BEL": "Belgium",
