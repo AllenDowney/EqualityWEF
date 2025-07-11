@@ -1101,46 +1101,14 @@ code_to_wef_country = {
     "YEM": "Yemen",
 }
 
-code_to_wef_country_oecd = {
-    "AUS": "Australia",
-    "AUT": "Austria",
-    "BEL": "Belgium",
-    "CAN": "Canada",
-    "CHE": "Switzerland",
-    "CHL": "Chile",
-    "COL": "Colombia",
-    "CRI": "Costa Rica",
-    "CZE": "Czechia",
-    "DEU": "Germany",
-    "DNK": "Denmark",
-    "ESP": "Spain",
-    "EST": "Estonia",
-    "FIN": "Finland",
-    "FRA": "France",
-    "GBR": "United Kingdom",
-    "GRC": "Greece",
-    "HUN": "Hungary",
-    "IRL": "Ireland",
-    "ISL": "Iceland",
-    "ISR": "Israel",
-    "ITA": "Italy",
-    "JPN": "Japan",
-    "KOR": "South Korea",
-    "LTU": "Lithuania",
-    "LUX": "Luxembourg",
-    "LVA": "Latvia",
-    "MEX": "Mexico",
-    "NLD": "Netherlands",
-    "NOR": "Norway",
-    "NZL": "New Zealand",
-    "POL": "Poland",
-    "PRT": "Portugal",
-    "SVK": "Slovakia",
-    "SVN": "Slovenia",
-    "SWE": "Sweden",
-    "TUR": "Türkiye",
-    "USA": "United States",
-}
+wef_country_to_code = {country: code for code, country in code_to_wef_country.items()}
+
+oecd_codes = ['AUS', 'AUT', 'BEL', 'CAN', 'CHE', 'CHL', 'COL', 'CRI', 'CZE',
+              'DEU', 'DNK', 'ESP', 'EST', 'FIN', 'FRA', 'GBR', 'GRC', 'HUN', 'IRL',
+              'ISL', 'ISR', 'ITA', 'JPN', 'KOR', 'LTU', 'LUX', 'LVA', 'MEX',
+              'NLD', 'NOR', 'NZL', 'POL', 'PRT', 'SVK', 'SVN', 'SWE', 'TUR', 'USA']
+
+
 
 
 def read_wef_file(filename):
@@ -1163,7 +1131,8 @@ def read_wef_file(filename):
             "Lao PDR": "Laos",
         }
     )
-
+    df.index = df["country"].map(wef_country_to_code)
+    df.index.name = "code"
     return df
 
 
@@ -1182,14 +1151,34 @@ def plot_revised_scores(df):
     plt.plot(df["score"], df["country"], "|", color=AIBM_COLORS["blue"])
     plt.plot(df["revised_score"], df["country"], "<", color=AIBM_COLORS["blue"])
     ax.invert_yaxis()
+    plt.ylim(n + 1, -1)
+    embolden_countries(['United States'])
 
-    decorate(xlabel="primary Enrolment Score", ylim=[n + 1, -1])
-    add_title(
-        "Revised Scores Are Very Different For Many Countries", "Subtitle", y=1.01
+def plot_revised_ranks(df):
+    """Plot revised ranks for countries.
+        
+    Args:
+        df: DataFrame with revised ranks
+    """
+    n = len(df)
+    height = 15 * n / 100
+    fig, ax = plt.subplots(figsize=(6, height))
+    plt.hlines(
+        df["country"], df["rank"], df["revised_rank"], color=AIBM_COLORS["light_gray"]
     )
-    add_subtext("Source: World Economic Forum", y=-0.05)
-    logo = add_logo(location=(1.0, -0.05))
-
+    plt.plot(df["rank"], df["country"], "|", color=AIBM_COLORS["blue"])
+    plt.plot(df["revised_rank"], df["country"], "o", color=AIBM_COLORS["blue"])
+    ax.invert_yaxis()
+    plt.ylim(n + 1, -1)
+    embolden_countries(['United States'])
+    
+def embolden_countries(countries):
+    # Make selected countries bold
+    ax = plt.gca()
+    ytick_labels = ax.get_yticklabels()
+    for i, label in enumerate(ytick_labels):
+        if label.get_text() in countries:
+            plt.setp(label, fontweight='bold')
 
 
 def plot_score_distributions(df, **options):
@@ -1212,5 +1201,14 @@ def make_weights(column, label):
 def make_weight_table(table, label):
     weights_orig = make_weights(table['score'], label)
     weights_revised = make_weights(table['revised_score'], label)
-    weights = pd.concat([weights_orig, weights_revised], axis=1, keys=['original', 'revised'])
+    weights = pd.concat([weights_orig, weights_revised],
+                        axis=1, 
+                        keys=['original', 'revised'])
     return weights
+
+def make_rank_table(df):
+    columns = ['country', 'ratio', 'rank', 'revised_rank', 'score', 'revised_score']
+    df['revised_rank'] = df['revised_score'].rank(method='min', ascending=False)
+    table = df[columns]
+    return table
+

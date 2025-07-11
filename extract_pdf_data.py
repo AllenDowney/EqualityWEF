@@ -42,40 +42,55 @@ def extract_pdf_data(page_number, pattern):
         # Extract education data
         found_pattern = False
         for i, line in enumerate(lines):
-            if pattern in line.lower():
-                found_pattern = True
-                parts = line.split()
+            if pattern not in line.lower():
+                continue
 
-                # Handle literacy format (fewer parts)
-                if pattern == "literacy" and len(parts) >= 4:
+            found_pattern = True
+            parts = line.split()
+
+            if pattern == "educational attainment":
+                # Only parse if line starts with 'Educational Attainment' and has at least 6 parts
+                if line.lower().startswith("educational attainment") and len(parts) >= 6:
                     try:
-                        rank_str = parts[2]  # "87th"
+                        rank_str = parts[2]  
                         result["rank"] = int("".join(filter(str.isdigit, rank_str)))
-                        result["score"] = float(parts[3])  # "0.977"
-                        # For literacy, diff, left, right are not available (shown as "-")
+                        result["score"] = float(parts[3]) 
+                        break
                     except (ValueError, IndexError) as e:
                         print(f"Parsing error: {e}")
                         print(f"Line: {line}")
                         print(f"Parts: {parts}")
 
-                # Handle education format (more parts)
-                elif len(parts) >= 9:
-                    try:
-                        rank_str = parts[4]
-                        result["rank"] = int("".join(filter(str.isdigit, rank_str)))
-                        result["score"] = float(parts[5])
-                        result["diff"] = float(parts[6])
-                        result["left"] = float(parts[7])
-                        result["right"] = float(parts[8])
-                    except (ValueError, IndexError) as e:
-                        print(f"Parsing error: {e}")
-                        print(f"Line: {line}")
-                        print(f"Parts: {parts}")
-                else:
-                    print(
-                        f"Not enough parts in line (found {len(parts)}, need >=4 for literacy or >=9 for education)"
-                    )
-                break
+            # Handle literacy format (fewer parts)
+            if pattern == "literacy" and len(parts) >= 4:
+                try:
+                    rank_str = parts[2]  # "87th"
+                    result["rank"] = int("".join(filter(str.isdigit, rank_str)))
+                    result["score"] = float(parts[3])  # "0.977"
+                    # For literacy, diff, left, right are not available (shown as "-")
+                except (ValueError, IndexError) as e:
+                    print(f"Parsing error: {e}")
+                    print(f"Line: {line}")
+                    print(f"Parts: {parts}")
+
+            # Handle education format (more parts)
+            elif len(parts) >= 9:
+                try:
+                    rank_str = parts[4]
+                    result["rank"] = int("".join(filter(str.isdigit, rank_str)))
+                    result["score"] = float(parts[5])
+                    result["diff"] = float(parts[6])
+                    result["left"] = float(parts[7])
+                    result["right"] = float(parts[8])
+                except (ValueError, IndexError) as e:
+                    print(f"Parsing error: {e}")
+                    print(f"Line: {line}")
+                    print(f"Parts: {parts}")
+            else:
+                print(
+                    f"Not enough parts in line (found {len(parts)}, need >=4 for literacy or >=9 for education)"
+                )
+            break
 
         if not found_pattern:
             print("Pattern not found in any line!")
@@ -103,7 +118,7 @@ if __name__ == "__main__":
     results = []
     for page_number in [117]:
         print(f"\nProcessing page {page_number}...")
-        data = extract_pdf_data(page_number, "primary education")
+        data = extract_pdf_data(page_number, "educational attainment")
         results.append(data)
     df = pd.DataFrame(results)
     print("\nDataFrame of extracted results:")
