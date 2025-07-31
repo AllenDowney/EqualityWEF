@@ -212,6 +212,50 @@ def extract_pdf_data(page_number, pattern):
                         print(f"DEBUG: Last part '{parts[8]}' might be causing the issue")
                 # Do not break here, continue to next line if parsing fails
 
+            # Handle sex ratio format
+            elif pattern == "sex ratio" and len(parts) >= 9:
+                print(f"DEBUG: Processing sex ratio with {len(parts)} parts")
+                try:
+                    # Based on the output we saw: ['Sex', 'ratio', 'at', 'birth**%', '129th', '0.936', '-', '-', '-']
+                    rank_str = parts[4]  # "129th"
+                    result["rank"] = int("".join(filter(str.isdigit, rank_str)))
+                    result["score"] = float(parts[5])  # "0.936"
+                    # For sex ratio, diff, left, right are not available (shown as "-")
+                    if len(parts) > 6 and parts[6] != "-":
+                        result["diff"] = float(parts[6])
+                    if len(parts) > 7 and parts[7] != "-":
+                        result["left"] = float(parts[7])
+                    if len(parts) > 8 and parts[8] != "-":
+                        result["right"] = float(parts[8])
+                    print(f"DEBUG: Successfully parsed - rank: {result['rank']}, score: {result['score']}, diff: {result['diff']}, left: {result['left']}, right: {result['right']}")
+                except (ValueError, IndexError) as e:
+                    print(f"Parsing error: {e}")
+                    print(f"Line: {line}")
+                    print(f"Parts: {parts}")
+                    if len(parts) > 8:
+                        print(f"DEBUG: Last part '{parts[8]}' might be causing the issue")
+
+            # Handle life expectancy format
+            elif pattern == "life expectancy" and len(parts) >= 8:
+                print(f"DEBUG: Processing life expectancy with {len(parts)} parts")
+                try:
+                    # Based on the output we saw: ['Healthy', 'life', 'expectancy**years', '58th', '1.046', '-', '-', '-']
+                    rank_str = parts[3]  # "58th"
+                    result["rank"] = int("".join(filter(str.isdigit, rank_str)))
+                    result["score"] = float(parts[4])  # "1.046"
+                    # For life expectancy, diff, left, right are not available (shown as "-")
+                    if len(parts) > 5 and parts[5] != "-":
+                        result["diff"] = float(parts[5])
+                    if len(parts) > 6 and parts[6] != "-":
+                        result["left"] = float(parts[6])
+                    if len(parts) > 7 and parts[7] != "-":
+                        result["right"] = float(parts[7])
+                    print(f"DEBUG: Successfully parsed - rank: {result['rank']}, score: {result['score']}, diff: {result['diff']}, left: {result['left']}, right: {result['right']}")
+                    break
+                except (ValueError, IndexError) as e:
+                    print(f"DEBUG: Error parsing life expectancy data: {e}")
+                    continue
+
             # Handle education format (more parts)
             elif len(parts) >= 9:
                 try:

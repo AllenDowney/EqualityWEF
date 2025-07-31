@@ -1212,3 +1212,23 @@ def make_rank_table(df):
     table = df[columns]
     return table
 
+
+def plot_percentages(df):
+    df['male_percent'] = df['left'].where(df['score'] == 1, df['right'])
+    df['female_percent'] = df['right'].where(df['score'] == 1, df['left'])
+
+    df_sorted = df.sort_values(by='female_percent', ascending=False)
+    country = df_sorted['country']
+    male = df_sorted['male_percent']
+    female = df_sorted['female_percent']
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+    plt.hlines(country, male, female, color=AIBM_COLORS['light_gray'])
+    plt.plot(male, country, 's', color=AIBM_COLORS['green'], label='Male')
+    plt.plot(female, country, 'o', color=AIBM_COLORS['orange'], label='Female')
+    ax.invert_yaxis()
+    
+    decorate(ylim=[len(df_sorted), 0.5])
+    add_subtext("Source: WEF Global Gender Gap Report", y=-0.05)
+    logo = add_logo(location=(1.0, -0.05))
+    embolden_countries(['United States'])
