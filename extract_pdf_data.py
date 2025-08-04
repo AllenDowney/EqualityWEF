@@ -40,6 +40,46 @@ def extract_pdf_data(page_number, pattern):
         else:
             print("Debug - failed to find country name in line 13")
 
+        # Get the overall score
+        if pattern.lower() == "gender gap index":
+            print(f"DEBUG: Looking for gender gap index pattern")
+            # Skip until we find "index and subindex"
+            index_start = 0
+            for i, line in enumerate(lines):
+                if "index and subindex" in line.lower():
+                    index_start = i + 1
+                    print(f"DEBUG: Found 'index and subindex' at line {i}")
+                    break
+            
+            # Look for "gender gap index" line after the index section starts
+            for i, line in enumerate(lines[index_start:], start=index_start):
+                if "gender gap index" in line.lower():
+                    print(f"DEBUG: Found 'gender gap index' line at line {i}: '{line}'")
+                    # The next line should contain the 2024 and 2023 data
+                    if i + 1 < len(lines):
+                        data_line = lines[i + 1]
+                        print(f"DEBUG: Data line: '{data_line}'")
+                        parts = data_line.split()
+                        print(f"DEBUG: Data line parts: {parts}")
+                        
+                        # Look for 2024 data (usually the first set of numbers)
+                        try:
+                            # The format appears to be: [2024_score] [2024_rank] [2023_score] [2023_rank]
+                            if len(parts) >= 2:
+                                # First two parts should be 2024 score and rank
+                                score_str = parts[0]  # e.g., "0.710"
+                                rank_str = parts[1]   # e.g., "78th"
+                                result["score"] = float(score_str)
+                                result["rank"] = int("".join(filter(str.isdigit, rank_str)))
+                                print(f"DEBUG: Successfully parsed 2024 data - rank: {result['rank']}, score: {result['score']}")
+                            else:
+                                print(f"DEBUG: Not enough parts in data line: {parts}")
+                        except (ValueError, IndexError) as e:
+                            print(f"DEBUG: Error parsing gender gap index data: {e}")
+                            print(f"Data line: {data_line}")
+                            print(f"Parts: {parts}")
+                    break
+
         # Extract education data
         found_pattern = False
         # Skip lines until we find the marker
@@ -50,7 +90,7 @@ def extract_pdf_data(page_number, pattern):
                 break
         # Now process only lines after the marker
         for i, line in enumerate(lines[start_idx:], start=start_idx):
-            if pattern not in line.lower():
+            if pattern.lower() not in line.lower():
                 continue
 
             found_pattern = True
@@ -256,6 +296,95 @@ def extract_pdf_data(page_number, pattern):
                     print(f"DEBUG: Error parsing life expectancy data: {e}")
                     continue
 
+            # Handle Health and Survival summary format
+            elif pattern == "Health and Survival" and len(parts) >= 4 and line.lower().startswith("health and survival"):
+                print(f"DEBUG: Processing Health and Survival summary with {len(parts)} parts")
+                try:
+                    rank_str = parts[3]  # "73rd" (not parts[2])
+                    result["rank"] = int("".join(filter(str.isdigit, rank_str)))
+                    result["score"] = float(parts[4])  # "0.970" (not parts[3])
+                    # For summary, diff, left, right may be unavailable (shown as "-")
+                    if len(parts) > 5 and parts[5] != "-":
+                        result["diff"] = float(parts[5])
+                    if len(parts) > 6 and parts[6] != "-":
+                        result["left"] = float(parts[6])
+                    if len(parts) > 7 and parts[7] != "-":
+                        result["right"] = float(parts[7])
+                    print(f"DEBUG: Successfully parsed - rank: {result['rank']}, score: {result['score']}, diff: {result['diff']}, left: {result['left']}, right: {result['right']}")
+                    break
+                except (ValueError, IndexError) as e:
+                    print(f"DEBUG: Error parsing Health and Survival data: {e}")
+                    continue
+
+            # Handle political empowerment format (summary line)
+            elif pattern == "political empowerment" and len(parts) >= 4:
+                print(f"DEBUG: Processing political empowerment with {len(parts)} parts")
+                try:
+                    # Based on the output we saw: ['Political', 'Empowerment', '61st', '0.257', '-', '-', '-']
+                    rank_str = parts[2]  # "61st"
+                    result["rank"] = int("".join(filter(str.isdigit, rank_str)))
+                    result["score"] = float(parts[3])  # "0.257"
+                    # Handle missing values represented by "-"
+                    result["diff"] = None if parts[4] == "-" else float(parts[4])
+                    result["left"] = None if parts[5] == "-" else float(parts[5])
+                    result["right"] = None if parts[6] == "-" else float(parts[6])
+                    print(f"DEBUG: Successfully parsed - rank: {result['rank']}, score: {result['score']}, diff: {result['diff']}, left: {result['left']}, right: {result['right']}")
+                    break
+                except (ValueError, IndexError) as e:
+                    print(f"DEBUG: Error parsing political empowerment data: {e}")
+                    continue
+
+            # Handle head of state format
+            elif pattern == "head of state" and len(parts) >= 13:
+                print(f"DEBUG: Processing head of state with {len(parts)} parts")
+                try:
+                    # Based on the output we saw: ['Years', 'with', 'female/male', 'head', 'of', 'state', '(last', '50)', '12th', '0.346', '-24.29', '12.85', '37.15', '0-50']
+                    rank_str = parts[8]  # "12th"
+                    result["rank"] = int("".join(filter(str.isdigit, rank_str)))
+                    result["score"] = float(parts[9])  # "0.346"
+                    result["diff"] = float(parts[10])    # "-24.29"
+                    result["left"] = float(parts[11])    # "12.85"
+                    result["right"] = float(parts[12])   # "37.15"
+                    print(f"DEBUG: Successfully parsed - rank: {result['rank']}, score: {result['score']}, diff: {result['diff']}, left: {result['left']}, right: {result['right']}")
+                    break
+                except (ValueError, IndexError) as e:
+                    print(f"DEBUG: Error parsing head of state data: {e}")
+                    continue
+
+            # Handle ministerial positions format
+            elif pattern == "ministerial positions" and len(parts) >= 9:
+                print(f"DEBUG: Processing ministerial positions with {len(parts)} parts")
+                try:
+                    # Based on the output we saw: ['Women', 'in', 'ministerial', 'positions%', '116th', '0.125', '-77.78', '11.11', '88.89', '0-100']
+                    rank_str = parts[4]  # "116th"
+                    result["rank"] = int("".join(filter(str.isdigit, rank_str)))
+                    result["score"] = float(parts[5])  # "0.125"
+                    result["diff"] = float(parts[6])    # "-77.78"
+                    result["left"] = float(parts[7])    # "11.11"
+                    result["right"] = float(parts[8])   # "88.89"
+                    print(f"DEBUG: Successfully parsed - rank: {result['rank']}, score: {result['score']}, diff: {result['diff']}, left: {result['left']}, right: {result['right']}")
+                    break
+                except (ValueError, IndexError) as e:
+                    print(f"DEBUG: Error parsing ministerial positions data: {e}")
+                    continue
+
+            # Handle women in parliament format
+            elif pattern == "women in parliament" and len(parts) >= 8:
+                print(f"DEBUG: Processing women in parliament with {len(parts)} parts")
+                try:
+                    # Based on the output we saw: ['Women', 'in', 'parliament%', '105th', '0.236', '-61.80', '19.10', '80.90', '0-100']
+                    rank_str = parts[3]  # "105th"
+                    result["rank"] = int("".join(filter(str.isdigit, rank_str)))
+                    result["score"] = float(parts[4])  # "0.236"
+                    result["diff"] = float(parts[5])    # "-61.80"
+                    result["left"] = float(parts[6])    # "19.10"
+                    result["right"] = float(parts[7])   # "80.90"
+                    print(f"DEBUG: Successfully parsed - rank: {result['rank']}, score: {result['score']}, diff: {result['diff']}, left: {result['left']}, right: {result['right']}")
+                    break
+                except (ValueError, IndexError) as e:
+                    print(f"DEBUG: Error parsing women in parliament data: {e}")
+                    continue
+
             # Handle education format (more parts)
             elif len(parts) >= 9:
                 try:
@@ -284,6 +413,10 @@ def extract_pdf_data(page_number, pattern):
             print("Lines containing 'participation':")
             for i, line in enumerate(lines):
                 if "participation" in line.lower():
+                    print(f"Line {i}: {line}")
+            print("Lines containing 'health':")
+            for i, line in enumerate(lines):
+                if "health" in line.lower():
                     print(f"Line {i}: {line}")
 
     return result

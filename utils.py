@@ -1212,15 +1212,19 @@ def make_rank_table(df):
     table = df[columns]
     return table
 
-
 def plot_percentages(df):
-    df['male_percent'] = df['left'].where(df['score'] == 1, df['right'])
-    df['female_percent'] = df['right'].where(df['score'] == 1, df['left'])
+    df['male'] = df['left'].where(df['score'] == 1, df['right'])
+    df['female'] = df['right'].where(df['score'] == 1, df['left'])
 
-    df_sorted = df.sort_values(by='female_percent', ascending=False)
+    plot_indicators(df)
+
+
+def plot_indicators(df):
+    
+    df_sorted = df.sort_values(by='female', ascending=False)
     country = df_sorted['country']
-    male = df_sorted['male_percent']
-    female = df_sorted['female_percent']
+    male = df_sorted['male']
+    female = df_sorted['female']
 
     fig, ax = plt.subplots(figsize=(6, 6))
     plt.hlines(country, male, female, color=AIBM_COLORS['light_gray'])
