@@ -1136,7 +1136,26 @@ def read_wef_file(filename):
     return df
 
 
-def plot_revised_scores(df):
+def save_revised_scores(df, notebook_name, suffix='revised_scores'):
+    """Save revised scores dataframe to CSV file.
+    
+    Args:
+        df: DataFrame with revised scores
+        notebook_name: name of the notebook
+        suffix: suffix to add to the filename
+    """
+    columns = ['country', 'score', 'revised_score']
+    df = df[columns]
+    
+    # Create filename
+    filename = f"{notebook_name}_{suffix}.csv"
+    
+    # Save to CSV
+    df.to_csv(filename, index=False)
+    print(f"Saved revised scores to {filename}")
+
+
+def plot_revised_scores(df, symbols=['x', 'o'], **options):
     """Plot revised scores for countries.
         
     Args:
@@ -1146,15 +1165,20 @@ def plot_revised_scores(df):
     height = 15 * n / 100
     fig, ax = plt.subplots(figsize=(6, height))
     plt.hlines(
-        df["country"], df["score"], df["revised_score"], color=AIBM_COLORS["light_gray"]
+        df["country"], df["score"], df["revised_score"], 
+        color=AIBM_COLORS["light_gray"]
     )
-    plt.plot(df["score"], df["country"], "|", color=AIBM_COLORS["blue"])
-    plt.plot(df["revised_score"], df["country"], "<", color=AIBM_COLORS["blue"])
+    underride(options, ms=5, color=AIBM_COLORS["orange"])
+    plt.plot(df["score"], df["country"], symbols[0], label='WEF score',
+             **options)
+    plt.plot(df["revised_score"], df["country"], symbols[1], label='revised score',
+             **options)
     ax.invert_yaxis()
     plt.ylim(n + 1, -1)
     embolden_countries(['United States'])
 
-def plot_revised_ranks(df):
+
+def plot_revised_ranks(df, **options):
     """Plot revised ranks for countries.
         
     Args:
@@ -1164,10 +1188,12 @@ def plot_revised_ranks(df):
     height = 15 * n / 100
     fig, ax = plt.subplots(figsize=(6, height))
     plt.hlines(
-        df["country"], df["rank"], df["revised_rank"], color=AIBM_COLORS["light_gray"]
+        df["country"], df["rank"], df["revised_rank"], 
+        color=AIBM_COLORS["light_gray"]
     )
-    plt.plot(df["rank"], df["country"], "|", color=AIBM_COLORS["blue"])
-    plt.plot(df["revised_rank"], df["country"], "o", color=AIBM_COLORS["blue"])
+    underride(options, color=AIBM_COLORS["purple"])
+    plt.plot(df["rank"], df["country"], "|", **options)
+    plt.plot(df["revised_rank"], df["country"], "o", **options)
     ax.invert_yaxis()
     plt.ylim(n + 1, -1)
     embolden_countries(['United States'])
@@ -1218,10 +1244,31 @@ def plot_percentages(df):
 
     plot_indicators(df)
 
-
-def plot_indicators(df):
+def save_percentages(df, notebook_name, suffix='percentages', sort=True):
+    """Save percentages dataframe to CSV file.
     
-    df_sorted = df.sort_values(by='female', ascending=False)
+    Args:
+        df: DataFrame with percentages
+        notebook_name: name of the notebook
+        suffix: suffix to add to the filename
+        sort: whether to sort the dataframe by female percentage
+    """
+    df['male'] = df['left'].where(df['score'] == 1, df['right'])
+    df['female'] = df['right'].where(df['score'] == 1, df['left'])
+
+    save_indicators(df, notebook_name, suffix, sort)
+
+def plot_indicators(df, sort=True):
+    """Plot percentages for indicators.
+    
+    Args:
+        df: DataFrame with percentages
+        sort: whether to sort the dataframe by female percentage
+    """
+    if sort:
+        df_sorted = df.sort_values(by='female', ascending=False)
+    else:
+        df_sorted = df
     country = df_sorted['country']
     male = df_sorted['male']
     female = df_sorted['female']
@@ -1229,10 +1276,28 @@ def plot_indicators(df):
     fig, ax = plt.subplots(figsize=(6, 6))
     plt.hlines(country, male, female, color=AIBM_COLORS['light_gray'])
     plt.plot(male, country, 's', color=AIBM_COLORS['green'], label='Male')
-    plt.plot(female, country, 'o', color=AIBM_COLORS['orange'], label='Female')
-    ax.invert_yaxis()
+    plt.plot(female, country, 'o', color=AIBM_COLORS['purple'], label='Female')
     
-    decorate(ylim=[len(df_sorted), 0.5])
+    n = len(df_sorted)
+    decorate(ylim=[n + 0.5, -0.5])
+
     add_subtext("Source: WEF Global Gender Gap Report", y=-0.05)
     logo = add_logo(location=(1.0, -0.05))
     embolden_countries(['United States'])
+
+def save_indicators(df, notebook_name, suffix='indicators', sort=True):
+    """Save indicators dataframe to CSV file.
+    
+    Args:
+        df: DataFrame with indicators
+        notebook_name: name of the notebook
+        suffix: suffix to add to the filename
+        sort: whether to sort the dataframe by female percentage
+    """
+    if sort:
+        df = df.sort_values(by='female', ascending=False)
+    columns = ['country', 'male', 'female']
+    df = df[columns]
+    filename = f"{notebook_name}_{suffix}.csv"
+    df.to_csv(filename, index=False)
+    print(f"Saved indicators to {filename}")
