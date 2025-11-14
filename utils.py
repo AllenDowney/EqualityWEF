@@ -54,14 +54,14 @@ def configure_plot_style():
     """
     # Figure size and DPI
     plt.rcParams["figure.dpi"] = 100
-    plt.rcParams["figure.figsize"] = [8.75, 3.5]  # inches
+    plt.rcParams["figure.figsize"] = [6.0, 3.5]  # inches
 
     # Default color cycle
     colors = [
-        AIBM_COLORS["orange"],
         AIBM_COLORS["green"],
-        AIBM_COLORS["blue"],
         AIBM_COLORS["purple"],
+        AIBM_COLORS["blue"],
+        AIBM_COLORS["orange"],
     ]
     cycler = plt.cycler(color=colors)
     plt.rc("axes", prop_cycle=cycler)

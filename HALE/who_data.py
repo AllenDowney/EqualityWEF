@@ -36,19 +36,23 @@ class WHOGHOClient:
             # Build OData filter string for TimeDim
             if len(years) == 1:
                 # Single year: TimeDim eq 2020
-                filter_str = f"TimeDim eq {years[0]}"
+                year_filter = f"TimeDim eq {years[0]}"
             elif len(years) <= 10:
                 # Small list: use 'or' conditions
                 filter_parts = [f"TimeDim eq {year}" for year in years]
-                filter_str = " or ".join(filter_parts)
-                filter_str = f"({filter_str})"
+                year_filter = " or ".join(filter_parts)
+                year_filter = f"({year_filter})"
             else:
                 # Large list or range: use ge/le for range
                 min_year = min(years)
                 max_year = max(years)
-                filter_str = f"TimeDim ge {min_year} and TimeDim le {max_year}"
+                year_filter = f"TimeDim ge {min_year} and TimeDim le {max_year}"
             
-            params['$filter'] = filter_str
+            # Combine with existing filter if present
+            if '$filter' in params:
+                params['$filter'] = f"({params['$filter']}) and ({year_filter})"
+            else:
+                params['$filter'] = year_filter
         
         try:
             response = self.session.get(url, params=params, timeout=30)
@@ -243,6 +247,744 @@ class WHOGHOClient:
         print(f"Retrieved {len(df)} cardiovascular death rate records")
         return df
 
+    def get_smoking_data(self, indicator_code: str, years: Optional[List[int]] = None) -> pd.DataFrame:
+        """
+        Retrieve smoking/tobacco use prevalence data by gender.
+        
+        Args:
+            indicator_code: Specific indicator code to use.
+                           Options: 'M_Est_smk_curr_std', 'M_Est_cig_curr_std', 'Adult_curr_tob_smoking'
+            years: List of specific years to retrieve. If None, gets all available years.
+            
+        Returns:
+            Pandas DataFrame with smoking data
+        """
+        print("Fetching smoking/tobacco use data from WHO GHO API...")
+        
+        # Dictionary mapping indicator codes to names
+        indicator_names = {
+            "M_Est_smk_curr_std": "Age-standardized current tobacco smoking prevalence",
+            "M_Est_cig_curr_std": "Age-standardized current cigarette smoking prevalence",
+            "Adult_curr_tob_smoking": "Current tobacco smoking among adults",
+        }
+        
+        # Get indicator name
+        indicator_name = indicator_names.get(indicator_code, indicator_code)
+        
+        print(f"Fetching indicator: {indicator_code} ({indicator_name})")
+        data = self.get_indicator_data(indicator_code, years=years)
+        
+        if not data or 'value' not in data or len(data['value']) == 0:
+            print(f"No data found for {indicator_code}")
+            return pd.DataFrame()
+        
+        print(f"Found {len(data['value'])} records for {indicator_code}")
+        records = []
+        
+        for item in data['value']:
+            try:
+                record = {
+                    'IndicatorCode': indicator_code,
+                    'IndicatorName': indicator_name,
+                    'Country': item.get('SpatialDim', ''),
+                    'CountryCode': item.get('SpatialDimType', ''),
+                    'Year': item.get('TimeDim', ''),
+                    'Sex': self._parse_sex_dimension(item.get('Dim1', '')),
+                    'SmokingPrevalence': item.get('NumericValue', None),
+                    'SmokingPrevalence_Low': item.get('Low', None),
+                    'SmokingPrevalence_High': item.get('High', None),
+                    'Comments': item.get('Comments', ''),
+                    'DataSource': item.get('DataSourceDim', ''),
+                }
+                
+                # If years were specified, API already filtered, but double-check
+                if years is None or int(record['Year']) in years:
+                    records.append(record)
+                    
+            except (ValueError, TypeError) as e:
+                print(f"Error processing record: {e}")
+                continue
+        
+        df = pd.DataFrame(records)
+        
+        # Clean and format the data
+        if not df.empty:
+            df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
+            df['SmokingPrevalence'] = pd.to_numeric(df['SmokingPrevalence'], errors='coerce')
+            df['SmokingPrevalence_Low'] = pd.to_numeric(df['SmokingPrevalence_Low'], errors='coerce')
+            df['SmokingPrevalence_High'] = pd.to_numeric(df['SmokingPrevalence_High'], errors='coerce')
+            
+            # Sort by indicator, country, sex, and year
+            df = df.sort_values(['IndicatorCode', 'Country', 'Sex', 'Year']).reset_index(drop=True)
+        
+        print(f"\nRetrieved {len(df)} smoking/tobacco use records")
+        if not df.empty:
+            print(f"Indicators: {df['IndicatorCode'].unique()}")
+            print(f"Years: {df['Year'].min():.0f} - {df['Year'].max():.0f}")
+            print(f"Countries: {df['Country'].nunique()}")
+            print(f"Sex categories: {df['Sex'].unique()}")
+        
+        return df
+
+    def get_suicide_rates(self, years: Optional[List[int]] = None) -> pd.DataFrame:
+        """
+        Retrieve age-standardized suicide rates by gender.
+        
+        Args:
+            years: List of specific years to retrieve. If None, gets all available years.
+            
+        Returns:
+            Pandas DataFrame with suicide rate data by gender
+        """
+        print("Fetching suicide rate data from WHO GHO API...")
+        
+        # MH_12 is the indicator code for age-standardized suicide rates
+        indicator_code = "MH_12"
+        indicator_name = "Age-standardized suicide rates (per 100 000 population)"
+        
+        print(f"Fetching indicator: {indicator_code} ({indicator_name})")
+        # Use OData filter to get only specified years at API level
+        data = self.get_indicator_data(indicator_code, years=years)
+        
+        if not data or 'value' not in data or len(data['value']) == 0:
+            print(f"No data found for {indicator_code}")
+            return pd.DataFrame()
+        
+        print(f"Found {len(data['value'])} records for {indicator_code}")
+        records = []
+        
+        for item in data['value']:
+            try:
+                record = {
+                    'IndicatorCode': indicator_code,
+                    'IndicatorName': indicator_name,
+                    'Country': item.get('SpatialDim', ''),
+                    'CountryCode': item.get('SpatialDimType', ''),
+                    'Year': item.get('TimeDim', ''),
+                    'Sex': self._parse_sex_dimension(item.get('Dim1', '')),
+                    'SuicideRate': item.get('NumericValue', None),
+                    'SuicideRate_Low': item.get('Low', None),
+                    'SuicideRate_High': item.get('High', None),
+                    'Comments': item.get('Comments', ''),
+                    'DataSource': item.get('DataSourceDim', ''),
+                }
+                
+                # If years were specified, API already filtered, but double-check
+                if years is None or int(record['Year']) in years:
+                    records.append(record)
+                    
+            except (ValueError, TypeError) as e:
+                print(f"Error processing record: {e}")
+                continue
+        
+        df = pd.DataFrame(records)
+        
+        # Clean and format the data
+        if not df.empty:
+            df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
+            df['SuicideRate'] = pd.to_numeric(df['SuicideRate'], errors='coerce')
+            df['SuicideRate_Low'] = pd.to_numeric(df['SuicideRate_Low'], errors='coerce')
+            df['SuicideRate_High'] = pd.to_numeric(df['SuicideRate_High'], errors='coerce')
+            
+            # Sort by country, sex, and year
+            df = df.sort_values(['Country', 'Sex', 'Year']).reset_index(drop=True)
+        
+        print(f"\nRetrieved {len(df)} suicide rate records")
+        if not df.empty:
+            print(f"Years: {df['Year'].min():.0f} - {df['Year'].max():.0f}")
+            print(f"Countries: {df['Country'].nunique()}")
+            print(f"Sex categories: {df['Sex'].unique()}")
+        
+        return df
+
+    def get_alcohol_death_rates(self, years: Optional[List[int]] = None) -> pd.DataFrame:
+        """
+        Retrieve age-standardized alcohol-attributable all-cause death rates by gender.
+        
+        Args:
+            years: List of specific years to retrieve. If None, gets all available years.
+            
+        Returns:
+            Pandas DataFrame with alcohol-attributable death rate data by gender
+        """
+        print("Fetching alcohol-attributable death rate data from WHO GHO API...")
+        
+        # SA_0000001832 is the indicator code for alcohol-attributable all-cause deaths
+        indicator_code = "SA_0000001832"
+        indicator_name = "Alcohol-attributable all-cause deaths per 100,000, age standardized"
+        
+        print(f"Fetching indicator: {indicator_code} ({indicator_name})")
+        # Use OData filter to get only specified years at API level
+        data = self.get_indicator_data(indicator_code, years=years)
+        
+        if not data or 'value' not in data or len(data['value']) == 0:
+            print(f"No data found for {indicator_code}")
+            return pd.DataFrame()
+        
+        print(f"Found {len(data['value'])} records for {indicator_code}")
+        records = []
+        
+        for item in data['value']:
+            try:
+                record = {
+                    'IndicatorCode': indicator_code,
+                    'IndicatorName': indicator_name,
+                    'Country': item.get('SpatialDim', ''),
+                    'CountryCode': item.get('SpatialDimType', ''),
+                    'Year': item.get('TimeDim', ''),
+                    'Sex': self._parse_sex_dimension(item.get('Dim1', '')),
+                    'AlcoholDeathRate': item.get('NumericValue', None),
+                    'AlcoholDeathRate_Low': item.get('Low', None),
+                    'AlcoholDeathRate_High': item.get('High', None),
+                    'Comments': item.get('Comments', ''),
+                    'DataSource': item.get('DataSourceDim', ''),
+                }
+                
+                # If years were specified, API already filtered, but double-check
+                if years is None or int(record['Year']) in years:
+                    records.append(record)
+                    
+            except (ValueError, TypeError) as e:
+                print(f"Error processing record: {e}")
+                continue
+        
+        df = pd.DataFrame(records)
+        
+        # Clean and format the data
+        if not df.empty:
+            df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
+            df['AlcoholDeathRate'] = pd.to_numeric(df['AlcoholDeathRate'], errors='coerce')
+            df['AlcoholDeathRate_Low'] = pd.to_numeric(df['AlcoholDeathRate_Low'], errors='coerce')
+            df['AlcoholDeathRate_High'] = pd.to_numeric(df['AlcoholDeathRate_High'], errors='coerce')
+            
+            # Sort by country, sex, and year
+            df = df.sort_values(['Country', 'Sex', 'Year']).reset_index(drop=True)
+        
+        print(f"\nRetrieved {len(df)} alcohol-attributable death rate records")
+        if not df.empty:
+            print(f"Years: {df['Year'].min():.0f} - {df['Year'].max():.0f}")
+            print(f"Countries: {df['Country'].nunique()}")
+            print(f"Sex categories: {df['Sex'].unique()}")
+        
+        return df
+
+    def get_diabetes_death_rates(self, years: Optional[List[int]] = None) -> pd.DataFrame:
+        """
+        Retrieve age-standardized diabetes mellitus death rates by gender.
+        
+        Args:
+            years: List of specific years to retrieve. If None, gets all available years.
+            
+        Returns:
+            Pandas DataFrame with diabetes death rate data by gender
+        """
+        print("Fetching diabetes death rate data from WHO GHO API...")
+        
+        # SA_0000001440 is the indicator code for age-standardized diabetes mellitus death rates
+        indicator_code = "SA_0000001440"
+        indicator_name = "Age-standardized death rates, diabetes mellitus, per 100,000"
+        
+        print(f"Fetching indicator: {indicator_code} ({indicator_name})")
+        # Use OData filter to get only specified years at API level
+        data = self.get_indicator_data(indicator_code, years=years)
+        
+        if not data or 'value' not in data or len(data['value']) == 0:
+            print(f"No data found for {indicator_code}")
+            return pd.DataFrame()
+        
+        print(f"Found {len(data['value'])} records for {indicator_code}")
+        records = []
+        
+        for item in data['value']:
+            try:
+                record = {
+                    'IndicatorCode': indicator_code,
+                    'IndicatorName': indicator_name,
+                    'Country': item.get('SpatialDim', ''),
+                    'CountryCode': item.get('SpatialDimType', ''),
+                    'Year': item.get('TimeDim', ''),
+                    'Sex': self._parse_sex_dimension(item.get('Dim1', '')),
+                    'DiabetesDeathRate': item.get('NumericValue', None),
+                    'DiabetesDeathRate_Low': item.get('Low', None),
+                    'DiabetesDeathRate_High': item.get('High', None),
+                    'Comments': item.get('Comments', ''),
+                    'DataSource': item.get('DataSourceDim', ''),
+                }
+                
+                # If years were specified, API already filtered, but double-check
+                if years is None or int(record['Year']) in years:
+                    records.append(record)
+                    
+            except (ValueError, TypeError) as e:
+                print(f"Error processing record: {e}")
+                continue
+        
+        df = pd.DataFrame(records)
+        
+        # Clean and format the data
+        if not df.empty:
+            df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
+            df['DiabetesDeathRate'] = pd.to_numeric(df['DiabetesDeathRate'], errors='coerce')
+            df['DiabetesDeathRate_Low'] = pd.to_numeric(df['DiabetesDeathRate_Low'], errors='coerce')
+            df['DiabetesDeathRate_High'] = pd.to_numeric(df['DiabetesDeathRate_High'], errors='coerce')
+            
+            # Sort by country, sex, and year
+            df = df.sort_values(['Country', 'Sex', 'Year']).reset_index(drop=True)
+        
+        print(f"\nRetrieved {len(df)} diabetes death rate records")
+        if not df.empty:
+            print(f"Years: {df['Year'].min():.0f} - {df['Year'].max():.0f}")
+            print(f"Countries: {df['Country'].nunique()}")
+            print(f"Sex categories: {df['Sex'].unique()}")
+        
+        return df
+
+    def get_poisoning_rates(self, years: Optional[List[int]] = None) -> pd.DataFrame:
+        """
+        Retrieve unintentional poisoning mortality rates by gender.
+        
+        Args:
+            years: List of specific years to retrieve. If None, gets all available years.
+            
+        Returns:
+            Pandas DataFrame with unintentional poisoning mortality rate data by gender
+        """
+        print("Fetching unintentional poisoning mortality rate data from WHO GHO API...")
+        
+        # SDGPOISON is the indicator code for unintentional poisoning mortality rates
+        indicator_code = "SDGPOISON"
+        indicator_name = "Mortality rate attributed to unintentional poisoning (per 100 000 population)"
+        
+        print(f"Fetching indicator: {indicator_code} ({indicator_name})")
+        # Use OData filter to get only specified years at API level
+        data = self.get_indicator_data(indicator_code, years=years)
+        
+        if not data or 'value' not in data or len(data['value']) == 0:
+            print(f"No data found for {indicator_code}")
+            return pd.DataFrame()
+        
+        print(f"Found {len(data['value'])} records for {indicator_code}")
+        records = []
+        
+        for item in data['value']:
+            try:
+                record = {
+                    'IndicatorCode': indicator_code,
+                    'IndicatorName': indicator_name,
+                    'Country': item.get('SpatialDim', ''),
+                    'CountryCode': item.get('SpatialDimType', ''),
+                    'Year': item.get('TimeDim', ''),
+                    'Sex': self._parse_sex_dimension(item.get('Dim1', '')),
+                    'PoisoningRate': item.get('NumericValue', None),
+                    'PoisoningRate_Low': item.get('Low', None),
+                    'PoisoningRate_High': item.get('High', None),
+                    'Comments': item.get('Comments', ''),
+                    'DataSource': item.get('DataSourceDim', ''),
+                }
+                
+                # If years were specified, API already filtered, but double-check
+                if years is None or int(record['Year']) in years:
+                    records.append(record)
+                    
+            except (ValueError, TypeError) as e:
+                print(f"Error processing record: {e}")
+                continue
+        
+        df = pd.DataFrame(records)
+        
+        # Clean and format the data
+        if not df.empty:
+            df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
+            df['PoisoningRate'] = pd.to_numeric(df['PoisoningRate'], errors='coerce')
+            df['PoisoningRate_Low'] = pd.to_numeric(df['PoisoningRate_Low'], errors='coerce')
+            df['PoisoningRate_High'] = pd.to_numeric(df['PoisoningRate_High'], errors='coerce')
+            
+            # Sort by country, sex, and year
+            df = df.sort_values(['Country', 'Sex', 'Year']).reset_index(drop=True)
+        
+        print(f"\nRetrieved {len(df)} unintentional poisoning mortality rate records")
+        if not df.empty:
+            print(f"Years: {df['Year'].min():.0f} - {df['Year'].max():.0f}")
+            print(f"Countries: {df['Country'].nunique()}")
+            print(f"Sex categories: {df['Sex'].unique()}")
+        
+        return df
+
+    def get_road_traffic_death_rates(self, years: Optional[List[int]] = None) -> pd.DataFrame:
+        """
+        Retrieve age-standardized road traffic crash death rates by gender (ages 15+).
+        
+        Args:
+            years: List of specific years to retrieve. If None, gets all available years.
+            
+        Returns:
+            Pandas DataFrame with road traffic crash death rate data by gender
+        """
+        print("Fetching road traffic crash death rate data from WHO GHO API...")
+        
+        # SA_0000001459 is the indicator code for age-standardized road traffic crash deaths (15+)
+        indicator_code = "SA_0000001459"
+        indicator_name = "Road traffic crash deaths, age-standardized death rates (15+), per 100,000 population"
+        
+        print(f"Fetching indicator: {indicator_code} ({indicator_name})")
+        # Use OData filter to get only specified years at API level
+        data = self.get_indicator_data(indicator_code, years=years)
+        
+        if not data or 'value' not in data or len(data['value']) == 0:
+            print(f"No data found for {indicator_code}")
+            return pd.DataFrame()
+        
+        print(f"Found {len(data['value'])} records for {indicator_code}")
+        records = []
+        
+        for item in data['value']:
+            try:
+                record = {
+                    'IndicatorCode': indicator_code,
+                    'IndicatorName': indicator_name,
+                    'Country': item.get('SpatialDim', ''),
+                    'CountryCode': item.get('SpatialDimType', ''),
+                    'Year': item.get('TimeDim', ''),
+                    'Sex': self._parse_sex_dimension(item.get('Dim1', '')),
+                    'RoadTrafficDeathRate': item.get('NumericValue', None),
+                    'RoadTrafficDeathRate_Low': item.get('Low', None),
+                    'RoadTrafficDeathRate_High': item.get('High', None),
+                    'Comments': item.get('Comments', ''),
+                    'DataSource': item.get('DataSourceDim', ''),
+                }
+                
+                # If years were specified, API already filtered, but double-check
+                if years is None or int(record['Year']) in years:
+                    records.append(record)
+                    
+            except (ValueError, TypeError) as e:
+                print(f"Error processing record: {e}")
+                continue
+        
+        df = pd.DataFrame(records)
+        
+        # Clean and format the data
+        if not df.empty:
+            df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
+            df['RoadTrafficDeathRate'] = pd.to_numeric(df['RoadTrafficDeathRate'], errors='coerce')
+            df['RoadTrafficDeathRate_Low'] = pd.to_numeric(df['RoadTrafficDeathRate_Low'], errors='coerce')
+            df['RoadTrafficDeathRate_High'] = pd.to_numeric(df['RoadTrafficDeathRate_High'], errors='coerce')
+            
+            # Sort by country, sex, and year
+            df = df.sort_values(['Country', 'Sex', 'Year']).reset_index(drop=True)
+        
+        print(f"\nRetrieved {len(df)} road traffic crash death rate records")
+        if not df.empty:
+            print(f"Years: {df['Year'].min():.0f} - {df['Year'].max():.0f}")
+            print(f"Countries: {df['Country'].nunique()}")
+            print(f"Sex categories: {df['Sex'].unique()}")
+        
+        return df
+
+    def get_maternal_mortality_ratio(self, years: Optional[List[int]] = None) -> pd.DataFrame:
+        """
+        Retrieve maternal mortality ratio (per 100,000 live births).
+        
+        Note: Maternal mortality is inherently female-specific (deaths during pregnancy, 
+        childbirth, or within 42 days of termination of pregnancy), so this indicator 
+        does not have gender breakdowns.
+        
+        Args:
+            years: List of specific years to retrieve. If None, gets all available years.
+            
+        Returns:
+            Pandas DataFrame with maternal mortality ratio data
+        """
+        print("Fetching maternal mortality ratio data from WHO GHO API...")
+        
+        # MDG_0000000026 is the indicator code for maternal mortality ratio
+        indicator_code = "MDG_0000000026"
+        indicator_name = "Maternal mortality ratio (per 100 000 live births)"
+        
+        print(f"Fetching indicator: {indicator_code} ({indicator_name})")
+        # Use OData filter to get only specified years at API level
+        data = self.get_indicator_data(indicator_code, years=years)
+        
+        if not data or 'value' not in data or len(data['value']) == 0:
+            print(f"No data found for {indicator_code}")
+            return pd.DataFrame()
+        
+        print(f"Found {len(data['value'])} records for {indicator_code}")
+        records = []
+        
+        for item in data['value']:
+            try:
+                record = {
+                    'IndicatorCode': indicator_code,
+                    'IndicatorName': indicator_name,
+                    'Country': item.get('SpatialDim', ''),
+                    'CountryCode': item.get('SpatialDimType', ''),
+                    'Year': item.get('TimeDim', ''),
+                    'Sex': 'Female',  # Maternal mortality is inherently female-specific
+                    'MaternalMortalityRatio': item.get('NumericValue', None),
+                    'MaternalMortalityRatio_Low': item.get('Low', None),
+                    'MaternalMortalityRatio_High': item.get('High', None),
+                    'Comments': item.get('Comments', ''),
+                    'DataSource': item.get('DataSourceDim', ''),
+                }
+                
+                # If years were specified, API already filtered, but double-check
+                if years is None or int(record['Year']) in years:
+                    records.append(record)
+                    
+            except (ValueError, TypeError) as e:
+                print(f"Error processing record: {e}")
+                continue
+        
+        df = pd.DataFrame(records)
+        
+        # Clean and format the data
+        if not df.empty:
+            df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
+            df['MaternalMortalityRatio'] = pd.to_numeric(df['MaternalMortalityRatio'], errors='coerce')
+            df['MaternalMortalityRatio_Low'] = pd.to_numeric(df['MaternalMortalityRatio_Low'], errors='coerce')
+            df['MaternalMortalityRatio_High'] = pd.to_numeric(df['MaternalMortalityRatio_High'], errors='coerce')
+            
+            # Sort by country and year
+            df = df.sort_values(['Country', 'Year']).reset_index(drop=True)
+        
+        print(f"\nRetrieved {len(df)} maternal mortality ratio records")
+        if not df.empty:
+            print(f"Years: {df['Year'].min():.0f} - {df['Year'].max():.0f}")
+            print(f"Countries: {df['Country'].nunique()}")
+            print(f"Note: Maternal mortality is inherently female-specific")
+        
+        return df
+
+    def get_homicide_rates(self, years: Optional[List[int]] = None) -> pd.DataFrame:
+        """
+        Retrieve homicide rates by gender.
+        
+        Args:
+            years: List of specific years to retrieve. If None, gets all available years.
+            
+        Returns:
+            Pandas DataFrame with homicide rate data by gender
+        """
+        print("Fetching homicide rate data from WHO GHO API...")
+        
+        # VIOLENCE_HOMICIDERATE is the indicator code for homicide rates
+        indicator_code = "VIOLENCE_HOMICIDERATE"
+        indicator_name = "Estimates of rates of homicides per 100 000 population"
+        
+        print(f"Fetching indicator: {indicator_code} ({indicator_name})")
+        # Use OData filter to get only specified years at API level
+        data = self.get_indicator_data(indicator_code, years=years)
+        
+        if not data or 'value' not in data or len(data['value']) == 0:
+            print(f"No data found for {indicator_code}")
+            return pd.DataFrame()
+        
+        print(f"Found {len(data['value'])} records for {indicator_code}")
+        records = []
+        
+        for item in data['value']:
+            try:
+                record = {
+                    'IndicatorCode': indicator_code,
+                    'IndicatorName': indicator_name,
+                    'Country': item.get('SpatialDim', ''),
+                    'CountryCode': item.get('SpatialDimType', ''),
+                    'Year': item.get('TimeDim', ''),
+                    'Sex': self._parse_sex_dimension(item.get('Dim1', '')),
+                    'HomicideRate': item.get('NumericValue', None),
+                    'HomicideRate_Low': item.get('Low', None),
+                    'HomicideRate_High': item.get('High', None),
+                    'Comments': item.get('Comments', ''),
+                    'DataSource': item.get('DataSourceDim', ''),
+                }
+                
+                # If years were specified, API already filtered, but double-check
+                if years is None or int(record['Year']) in years:
+                    records.append(record)
+                    
+            except (ValueError, TypeError) as e:
+                print(f"Error processing record: {e}")
+                continue
+        
+        df = pd.DataFrame(records)
+        
+        # Clean and format the data
+        if not df.empty:
+            df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
+            df['HomicideRate'] = pd.to_numeric(df['HomicideRate'], errors='coerce')
+            df['HomicideRate_Low'] = pd.to_numeric(df['HomicideRate_Low'], errors='coerce')
+            df['HomicideRate_High'] = pd.to_numeric(df['HomicideRate_High'], errors='coerce')
+            
+            # Sort by country, sex, and year
+            df = df.sort_values(['Country', 'Sex', 'Year']).reset_index(drop=True)
+        
+        print(f"\nRetrieved {len(df)} homicide rate records")
+        if not df.empty:
+            print(f"Years: {df['Year'].min():.0f} - {df['Year'].max():.0f}")
+            print(f"Countries: {df['Country'].nunique()}")
+            print(f"Sex categories: {df['Sex'].unique()}")
+        
+        return df
+
+    def get_under_five_mortality_rate(self, years: Optional[List[int]] = None) -> pd.DataFrame:
+        """
+        Retrieve under-five mortality rate (deaths per 1000 live births) by sex.
+        
+        Args:
+            years: List of specific years to retrieve. If None, gets all available years.
+            
+        Returns:
+            Pandas DataFrame with under-five mortality rate data
+        """
+        print("Fetching under-five mortality rate data from WHO GHO API...")
+        
+        # MDG_0000000007 is the indicator code for under-five mortality rate (MDG indicator)
+        indicator_code = "MDG_0000000007"
+        indicator_name = "Under-five mortality rate (probability of dying by age 5 per 1000 live births)"
+        
+        print(f"Fetching indicator: {indicator_code} ({indicator_name})")
+        
+        # Filter for records with sex dimension (Dim1Type eq 'SEX')
+        params = {"$filter": "Dim1Type eq 'SEX'"}
+        
+        # Use OData filter to get only specified years at API level
+        data = self.get_indicator_data(indicator_code, params=params, years=years)
+        
+        if not data or 'value' not in data or len(data['value']) == 0:
+            print(f"No data found for {indicator_code}")
+            return pd.DataFrame()
+        
+        print(f"Found {len(data['value'])} records for {indicator_code} with sex dimension")
+        records = []
+        
+        for item in data['value']:
+            try:
+                # Only process records where Dim1Type is SEX
+                if item.get('Dim1Type') != 'SEX':
+                    continue
+                    
+                record = {
+                    'IndicatorCode': indicator_code,
+                    'IndicatorName': indicator_name,
+                    'Country': item.get('SpatialDim', ''),
+                    'CountryCode': item.get('SpatialDimType', ''),
+                    'Year': item.get('TimeDim', ''),
+                    'Sex': self._parse_sex_dimension(item.get('Dim1', '')),
+                    'U5MR': item.get('NumericValue', None),
+                    'U5MR_Low': item.get('Low', None),
+                    'U5MR_High': item.get('High', None),
+                    'Comments': item.get('Comments', ''),
+                    'DataSource': item.get('DataSourceDim', ''),
+                }
+                
+                # If years were specified, API already filtered, but double-check
+                if years is None or int(record['Year']) in years:
+                    records.append(record)
+                    
+            except (ValueError, TypeError) as e:
+                print(f"Error processing record: {e}")
+                continue
+        
+        df = pd.DataFrame(records)
+        
+        # Clean and format the data
+        if not df.empty:
+            df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
+            df['U5MR'] = pd.to_numeric(df['U5MR'], errors='coerce')
+            df['U5MR_Low'] = pd.to_numeric(df['U5MR_Low'], errors='coerce')
+            df['U5MR_High'] = pd.to_numeric(df['U5MR_High'], errors='coerce')
+            
+            # Sort by country, sex, and year
+            df = df.sort_values(['Country', 'Sex', 'Year']).reset_index(drop=True)
+        
+        print(f"\nRetrieved {len(df)} under-five mortality rate records")
+        if not df.empty:
+            print(f"Years: {df['Year'].min():.0f} - {df['Year'].max():.0f}")
+            print(f"Countries: {df['Country'].nunique()}")
+            print(f"Sex categories: {df['Sex'].unique()}")
+        
+        return df
+
+    def get_intimate_partner_violence(self, years: Optional[List[int]] = None) -> pd.DataFrame:
+        """
+        Retrieve intimate partner violence prevalence (percentage of women experiencing violence).
+        
+        Note: Intimate partner violence is inherently female-specific and is a prevalence indicator
+        (percentage), not a death rate. It affects women's health indirectly through mental health,
+        injuries, and other health consequences.
+        
+        Args:
+            years: List of specific years to retrieve. If None, gets all available years.
+            
+        Returns:
+            Pandas DataFrame with intimate partner violence prevalence data
+        """
+        print("Fetching intimate partner violence prevalence data from WHO GHO API...")
+        
+        # SDGIPV is the indicator code for intimate partner violence prevalence (previous 12 months)
+        indicator_code = "SDGIPV"
+        indicator_name = "Proportion of ever-partnered women and girls aged 15-49 years subjected to physical and/or sexual violence by a current or former intimate partner in the previous 12 months"
+        
+        print(f"Fetching indicator: {indicator_code} ({indicator_name})")
+        # Use OData filter to get only specified years at API level
+        data = self.get_indicator_data(indicator_code, years=years)
+        
+        if not data or 'value' not in data or len(data['value']) == 0:
+            print(f"No data found for {indicator_code}")
+            return pd.DataFrame()
+        
+        print(f"Found {len(data['value'])} records for {indicator_code}")
+        records = []
+        
+        for item in data['value']:
+            try:
+                # Only process records where SpatialDimType is COUNTRY (exclude regional aggregates)
+                if item.get('SpatialDimType') != 'COUNTRY':
+                    continue
+                
+                record = {
+                    'IndicatorCode': indicator_code,
+                    'IndicatorName': indicator_name,
+                    'Country': item.get('SpatialDim', ''),
+                    'CountryCode': item.get('SpatialDimType', ''),
+                    'Year': item.get('TimeDim', ''),
+                    'Sex': 'Female',  # Intimate partner violence is inherently female-specific
+                    'IPVPrevalence': item.get('NumericValue', None),
+                    'IPVPrevalence_Low': item.get('Low', None),
+                    'IPVPrevalence_High': item.get('High', None),
+                    'Comments': item.get('Comments', ''),
+                    'DataSource': item.get('DataSourceDim', ''),
+                }
+                
+                # If years were specified, API already filtered, but double-check
+                if years is None or int(record['Year']) in years:
+                    records.append(record)
+                    
+            except (ValueError, TypeError) as e:
+                print(f"Error processing record: {e}")
+                continue
+        
+        df = pd.DataFrame(records)
+        
+        # Clean and format the data
+        if not df.empty:
+            df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
+            df['IPVPrevalence'] = pd.to_numeric(df['IPVPrevalence'], errors='coerce')
+            df['IPVPrevalence_Low'] = pd.to_numeric(df['IPVPrevalence_Low'], errors='coerce')
+            df['IPVPrevalence_High'] = pd.to_numeric(df['IPVPrevalence_High'], errors='coerce')
+            
+            # Sort by country and year
+            df = df.sort_values(['Country', 'Year']).reset_index(drop=True)
+        
+        print(f"\nRetrieved {len(df)} intimate partner violence prevalence records")
+        if not df.empty:
+            print(f"Years: {df['Year'].min():.0f} - {df['Year'].max():.0f}")
+            print(f"Countries: {df['Country'].nunique()}")
+            print(f"Note: Intimate partner violence is inherently female-specific (prevalence indicator, not a death rate)")
+        
+        return df
+
     def search_indicators(self, search_term: str) -> pd.DataFrame:
         """
         Search for indicators containing a specific term.
@@ -386,15 +1128,15 @@ def main():
     )
     parser.add_argument(
         "--data",
-        choices=["hale", "cardio", "both", "all"],
+        choices=["hale", "cardio", "smoking", "suicide", "alcohol", "poisoning", "roadtraffic", "maternal", "homicide", "ipv", "u5mr", "diabetes", "both", "all"],
         default="both",
-        help="Which data to download: hale (HALE only), cardio (cardiovascular only), both (HALE and cardio), all (includes examples and analysis)"
+        help="Which data to download: hale (HALE only), cardio (cardiovascular only), smoking (smoking/tobacco only), suicide (suicide rates only), alcohol (alcohol-attributable death rates only), poisoning (unintentional poisoning rates only), roadtraffic (road traffic death rates only), maternal (maternal mortality ratio only), homicide (homicide rates only), ipv (intimate partner violence prevalence only), u5mr (under-five mortality rate only), diabetes (diabetes death rates only), both (HALE and cardio), all (includes examples and analysis)"
     )
     parser.add_argument(
         "--years",
         type=str,
         default=None,
-        help="Comma-separated list of years to filter (e.g., '2015,2020,2023') or range (e.g., '2015-2023'). If not specified, gets all available years."
+        help="Comma-separated list of years to filter (e.g., '2015,2020,2023') or range (e.g., '2015-2023'). If not specified, defaults to 2000-2030 to get the most recent data."
     )
     parser.add_argument(
         "--output-dir",
@@ -413,6 +1155,73 @@ def main():
         type=str,
         default=None,
         help="Filename for cardiovascular death rates CSV (default: who_cardiovascular_death_rates.csv)"
+    )
+    parser.add_argument(
+        "--smoking-filename",
+        type=str,
+        default=None,
+        help="Filename for smoking data CSV (default: who_smoking_data.csv)"
+    )
+    parser.add_argument(
+        "--suicide-filename",
+        type=str,
+        default=None,
+        help="Filename for suicide rate data CSV (default: who_suicide_rates.csv)"
+    )
+    parser.add_argument(
+        "--alcohol-filename",
+        type=str,
+        default=None,
+        help="Filename for alcohol-attributable death rate data CSV (default: who_alcohol_death_rates.csv)"
+    )
+    parser.add_argument(
+        "--poisoning-filename",
+        type=str,
+        default=None,
+        help="Filename for unintentional poisoning mortality rate data CSV (default: who_poisoning_rates.csv)"
+    )
+    parser.add_argument(
+        "--roadtraffic-filename",
+        type=str,
+        default=None,
+        help="Filename for road traffic death rate data CSV (default: who_road_traffic_death_rates.csv)"
+    )
+    parser.add_argument(
+        "--maternal-filename",
+        type=str,
+        default=None,
+        help="Filename for maternal mortality ratio data CSV (default: who_maternal_mortality_ratio.csv)"
+    )
+    parser.add_argument(
+        "--homicide-filename",
+        type=str,
+        default=None,
+        help="Filename for homicide rate data CSV (default: who_homicide_rates.csv)"
+    )
+    parser.add_argument(
+        "--ipv-filename",
+        type=str,
+        default=None,
+        help="Filename for intimate partner violence prevalence data CSV (default: who_ipv_prevalence.csv)"
+    )
+    parser.add_argument(
+        "--diabetes-filename",
+        type=str,
+        default=None,
+        help="Filename for diabetes death rate data CSV (default: who_diabetes_death_rates.csv)"
+    )
+    parser.add_argument(
+        "--u5mr-filename",
+        type=str,
+        default=None,
+        help="Filename for under-five mortality rate data CSV (default: who_u5mr.csv)"
+    )
+    parser.add_argument(
+        "--smoking-indicator",
+        type=str,
+        required=False,
+        choices=["M_Est_smk_curr_std", "M_Est_cig_curr_std", "Adult_curr_tob_smoking"],
+        help="Specific smoking indicator to download (required when --data smoking)"
     )
     parser.add_argument(
         "--verbose",
@@ -478,6 +1287,7 @@ def main():
         return
     
     # Parse years argument
+    # Default to 2000-2030 to get the most recent data available
     years = None
     if args.years:
         if '-' in args.years:
@@ -487,6 +1297,9 @@ def main():
         else:
             # Comma-separated list: 2015,2020,2023
             years = [int(y.strip()) for y in args.years.split(',')]
+    else:
+        # Default to 2000-2030 to get all available data including most recent
+        years = list(range(2000, 2031))
     
     # Create output directory if it doesn't exist
     os.makedirs(args.output_dir, exist_ok=True)
@@ -494,10 +1307,30 @@ def main():
     # Determine which data to download
     download_hale = args.data in ["hale", "both", "all"]
     download_cardio = args.data in ["cardio", "both", "all"]
+    download_smoking = args.data in ["smoking", "all"]
+    download_suicide = args.data in ["suicide", "all"]
+    download_alcohol = args.data in ["alcohol", "all"]
+    download_poisoning = args.data in ["poisoning", "all"]
+    download_roadtraffic = args.data in ["roadtraffic", "all"]
+    download_maternal = args.data in ["maternal", "all"]
+    download_homicide = args.data in ["homicide", "all"]
+    download_ipv = args.data in ["ipv", "all"]
+    download_u5mr = args.data in ["u5mr", "all"]
+    download_diabetes = args.data in ["diabetes", "all"]
     show_examples = args.data == "all"
     
     hale_df = pd.DataFrame()
     cardio_df = pd.DataFrame()
+    smoking_df = pd.DataFrame()
+    suicide_df = pd.DataFrame()
+    alcohol_df = pd.DataFrame()
+    poisoning_df = pd.DataFrame()
+    roadtraffic_df = pd.DataFrame()
+    maternal_df = pd.DataFrame()
+    homicide_df = pd.DataFrame()
+    ipv_df = pd.DataFrame()
+    u5mr_df = pd.DataFrame()
+    diabetes_df = pd.DataFrame()
     
     # Download HALE data if requested
     if download_hale:
@@ -610,6 +1443,533 @@ def main():
                 if not alt_indicators.empty:
                     print("Found heart disease indicators:")
                     print(alt_indicators[['IndicatorCode', 'IndicatorName']].to_string(index=False))
+    
+    # Download smoking data if requested
+    if download_smoking:
+        if not args.smoking_indicator:
+            print("Error: --smoking-indicator is required when downloading smoking data.")
+            print("Available options: M_Est_smk_curr_std, M_Est_cig_curr_std, Adult_curr_tob_smoking")
+            return
+        
+        print("\n" + "="*60)
+        print("=== SMOKING/TOBACCO USE PREVALENCE BY GENDER ===")
+        print("="*60)
+        
+        # Get smoking data
+        smoking_df = client.get_smoking_data(indicator_code=args.smoking_indicator, years=years)
+        
+        if not smoking_df.empty:
+            print(f"\nTotal smoking/tobacco use records: {len(smoking_df)}")
+            print(f"Countries: {smoking_df['Country'].nunique()}")
+            print(f"Years covered: {smoking_df['Year'].min():.0f} - {smoking_df['Year'].max():.0f}")
+            print(f"Sex categories: {smoking_df['Sex'].unique()}")
+            print(f"Indicators found: {smoking_df['IndicatorCode'].unique()}")
+            
+            if args.verbose:
+                print("\nSample smoking data:")
+                print(smoking_df.head(10))
+            
+            # Save smoking data to CSV
+            smoking_filename = args.smoking_filename or 'who_smoking_data.csv'
+            smoking_path = os.path.join(args.output_dir, smoking_filename)
+            smoking_df.to_csv(smoking_path, index=False)
+            print(f"\n=== Smoking/tobacco use data saved to {smoking_path} ===")
+            
+            # Show summary by indicator
+            print("\n=== Summary by Indicator ===")
+            for indicator in smoking_df['IndicatorCode'].unique():
+                ind_data = smoking_df[smoking_df['IndicatorCode'] == indicator]
+                print(f"\n{indicator}:")
+                print(f"  Records: {len(ind_data)}")
+                print(f"  Years: {ind_data['Year'].min():.0f} - {ind_data['Year'].max():.0f}")
+                print(f"  Countries: {ind_data['Country'].nunique()}")
+                print(f"  Sex categories: {ind_data['Sex'].unique()}")
+            
+            if show_examples:
+                # Analyze by gender
+                print("\n=== Smoking Prevalence Statistics by Gender ===")
+                for indicator in smoking_df['IndicatorCode'].unique():
+                    ind_data = smoking_df[smoking_df['IndicatorCode'] == indicator]
+                    gender_stats = ind_data.groupby('Sex')['SmokingPrevalence'].agg(['count', 'mean', 'std']).round(2)
+                    print(f"\n{indicator}:")
+                    print(gender_stats)
+        else:
+            print("No smoking/tobacco use data found.")
+    
+    # Download suicide data if requested
+    if download_suicide:
+        print("\n" + "="*60)
+        print("=== SUICIDE RATES BY GENDER ===")
+        print("="*60)
+        
+        # Get suicide rates
+        suicide_df = client.get_suicide_rates(years=years)
+        
+        if not suicide_df.empty:
+            print(f"\nTotal suicide rate records: {len(suicide_df)}")
+            print(f"Countries: {suicide_df['Country'].nunique()}")
+            print(f"Years covered: {suicide_df['Year'].min():.0f} - {suicide_df['Year'].max():.0f}")
+            print(f"Sex categories: {suicide_df['Sex'].unique()}")
+            print(f"Indicator: {suicide_df['IndicatorCode'].unique()[0]}")
+            
+            if args.verbose:
+                print("\nSample suicide rate data:")
+                print(suicide_df.head(10))
+            
+            # Save suicide data to CSV
+            suicide_filename = args.suicide_filename or 'who_suicide_rates.csv'
+            suicide_path = os.path.join(args.output_dir, suicide_filename)
+            suicide_df.to_csv(suicide_path, index=False)
+            print(f"\n=== Suicide rate data saved to {suicide_path} ===")
+            
+            if show_examples:
+                # Analyze by gender
+                print("\n=== Suicide Rate Statistics by Gender ===")
+                gender_stats = suicide_df.groupby('Sex')['SuicideRate'].agg(['count', 'mean', 'std']).round(2)
+                print(gender_stats)
+                
+                # Compare male vs female suicide rates
+                latest_year = suicide_df['Year'].max()
+                latest_suicide = suicide_df[suicide_df['Year'] == latest_year]
+                
+                if not latest_suicide.empty:
+                    print(f"\n=== Gender Comparison for {latest_year:.0f} ===")
+                    gender_comparison = latest_suicide.groupby('Sex')['SuicideRate'].agg(['mean', 'std']).round(2)
+                    print(gender_comparison)
+                    
+                    # Countries with highest/lowest suicide rates by gender
+                    for sex in ['Male', 'Female']:
+                        sex_data = latest_suicide[latest_suicide['Sex'] == sex]
+                        if not sex_data.empty:
+                            print(f"\nTop 10 countries with highest suicide rates ({sex}) in {latest_year:.0f}:")
+                            top_10 = sex_data.nlargest(10, 'SuicideRate')[['Country', 'SuicideRate']]
+                            print(top_10.to_string(index=False))
+                            
+                            print(f"\nBottom 10 countries with lowest suicide rates ({sex}) in {latest_year:.0f}:")
+                            bottom_10 = sex_data.nsmallest(10, 'SuicideRate')[['Country', 'SuicideRate']]
+                            print(bottom_10.to_string(index=False))
+        else:
+            print("No suicide rate data found.")
+    
+    # Download alcohol data if requested
+    if download_alcohol:
+        print("\n" + "="*60)
+        print("=== ALCOHOL-ATTRIBUTABLE DEATH RATES BY GENDER ===")
+        print("="*60)
+        
+        # Get alcohol-attributable death rates
+        alcohol_df = client.get_alcohol_death_rates(years=years)
+        
+        if not alcohol_df.empty:
+            print(f"\nTotal alcohol-attributable death rate records: {len(alcohol_df)}")
+            print(f"Countries: {alcohol_df['Country'].nunique()}")
+            print(f"Years covered: {alcohol_df['Year'].min():.0f} - {alcohol_df['Year'].max():.0f}")
+            print(f"Sex categories: {alcohol_df['Sex'].unique()}")
+            print(f"Indicator: {alcohol_df['IndicatorCode'].unique()[0]}")
+            
+            if args.verbose:
+                print("\nSample alcohol-attributable death rate data:")
+                print(alcohol_df.head(10))
+            
+            # Save alcohol data to CSV
+            alcohol_filename = args.alcohol_filename or 'who_alcohol_death_rates.csv'
+            alcohol_path = os.path.join(args.output_dir, alcohol_filename)
+            alcohol_df.to_csv(alcohol_path, index=False)
+            print(f"\n=== Alcohol-attributable death rate data saved to {alcohol_path} ===")
+            
+            if show_examples:
+                # Analyze by gender
+                print("\n=== Alcohol-Attributable Death Rate Statistics by Gender ===")
+                gender_stats = alcohol_df.groupby('Sex')['AlcoholDeathRate'].agg(['count', 'mean', 'std']).round(2)
+                print(gender_stats)
+                
+                # Compare male vs female death rates
+                latest_year = alcohol_df['Year'].max()
+                latest_alcohol = alcohol_df[alcohol_df['Year'] == latest_year]
+                
+                if not latest_alcohol.empty:
+                    print(f"\n=== Gender Comparison for {latest_year:.0f} ===")
+                    gender_comparison = latest_alcohol.groupby('Sex')['AlcoholDeathRate'].agg(['mean', 'std']).round(2)
+                    print(gender_comparison)
+                    
+                    # Countries with highest/lowest death rates by gender
+                    for sex in ['Male', 'Female']:
+                        sex_data = latest_alcohol[latest_alcohol['Sex'] == sex]
+                        if not sex_data.empty:
+                            print(f"\nTop 10 countries with highest alcohol-attributable death rates ({sex}) in {latest_year:.0f}:")
+                            top_10 = sex_data.nlargest(10, 'AlcoholDeathRate')[['Country', 'AlcoholDeathRate']]
+                            print(top_10.to_string(index=False))
+                            
+                            print(f"\nBottom 10 countries with lowest alcohol-attributable death rates ({sex}) in {latest_year:.0f}:")
+                            bottom_10 = sex_data.nsmallest(10, 'AlcoholDeathRate')[['Country', 'AlcoholDeathRate']]
+                            print(bottom_10.to_string(index=False))
+        else:
+            print("No alcohol-attributable death rate data found.")
+    
+    # Download poisoning data if requested
+    if download_poisoning:
+        print("\n" + "="*60)
+        print("=== UNINTENTIONAL POISONING MORTALITY RATES BY GENDER ===")
+        print("="*60)
+        
+        # Get unintentional poisoning mortality rates
+        poisoning_df = client.get_poisoning_rates(years=years)
+        
+        if not poisoning_df.empty:
+            print(f"\nTotal unintentional poisoning mortality rate records: {len(poisoning_df)}")
+            print(f"Countries: {poisoning_df['Country'].nunique()}")
+            print(f"Years covered: {poisoning_df['Year'].min():.0f} - {poisoning_df['Year'].max():.0f}")
+            print(f"Sex categories: {poisoning_df['Sex'].unique()}")
+            print(f"Indicator: {poisoning_df['IndicatorCode'].unique()[0]}")
+            
+            if args.verbose:
+                print("\nSample unintentional poisoning mortality rate data:")
+                print(poisoning_df.head(10))
+            
+            # Save poisoning data to CSV
+            poisoning_filename = args.poisoning_filename or 'who_poisoning_rates.csv'
+            poisoning_path = os.path.join(args.output_dir, poisoning_filename)
+            poisoning_df.to_csv(poisoning_path, index=False)
+            print(f"\n=== Unintentional poisoning mortality rate data saved to {poisoning_path} ===")
+            
+            if show_examples:
+                # Analyze by gender
+                print("\n=== Unintentional Poisoning Mortality Rate Statistics by Gender ===")
+                gender_stats = poisoning_df.groupby('Sex')['PoisoningRate'].agg(['count', 'mean', 'std']).round(2)
+                print(gender_stats)
+                
+                # Compare male vs female death rates
+                latest_year = poisoning_df['Year'].max()
+                latest_poisoning = poisoning_df[poisoning_df['Year'] == latest_year]
+                
+                if not latest_poisoning.empty:
+                    print(f"\n=== Gender Comparison for {latest_year:.0f} ===")
+                    gender_comparison = latest_poisoning.groupby('Sex')['PoisoningRate'].agg(['mean', 'std']).round(2)
+                    print(gender_comparison)
+                    
+                    # Countries with highest/lowest death rates by gender
+                    for sex in ['Male', 'Female']:
+                        sex_data = latest_poisoning[latest_poisoning['Sex'] == sex]
+                        if not sex_data.empty:
+                            print(f"\nTop 10 countries with highest unintentional poisoning mortality rates ({sex}) in {latest_year:.0f}:")
+                            top_10 = sex_data.nlargest(10, 'PoisoningRate')[['Country', 'PoisoningRate']]
+                            print(top_10.to_string(index=False))
+                            
+                            print(f"\nBottom 10 countries with lowest unintentional poisoning mortality rates ({sex}) in {latest_year:.0f}:")
+                            bottom_10 = sex_data.nsmallest(10, 'PoisoningRate')[['Country', 'PoisoningRate']]
+                            print(bottom_10.to_string(index=False))
+        else:
+            print("No unintentional poisoning mortality rate data found.")
+    
+    # Download road traffic data if requested
+    if download_roadtraffic:
+        print("\n" + "="*60)
+        print("=== ROAD TRAFFIC CRASH DEATH RATES BY GENDER ===")
+        print("="*60)
+        
+        # Get road traffic crash death rates
+        roadtraffic_df = client.get_road_traffic_death_rates(years=years)
+        
+        if not roadtraffic_df.empty:
+            print(f"\nTotal road traffic crash death rate records: {len(roadtraffic_df)}")
+            print(f"Countries: {roadtraffic_df['Country'].nunique()}")
+            print(f"Years covered: {roadtraffic_df['Year'].min():.0f} - {roadtraffic_df['Year'].max():.0f}")
+            print(f"Sex categories: {roadtraffic_df['Sex'].unique()}")
+            print(f"Indicator: {roadtraffic_df['IndicatorCode'].unique()[0]}")
+            
+            if args.verbose:
+                print("\nSample road traffic crash death rate data:")
+                print(roadtraffic_df.head(10))
+            
+            # Save road traffic data to CSV
+            roadtraffic_filename = args.roadtraffic_filename or 'who_road_traffic_death_rates.csv'
+            roadtraffic_path = os.path.join(args.output_dir, roadtraffic_filename)
+            roadtraffic_df.to_csv(roadtraffic_path, index=False)
+            print(f"\n=== Road traffic crash death rate data saved to {roadtraffic_path} ===")
+            
+            if show_examples:
+                # Analyze by gender
+                print("\n=== Road Traffic Crash Death Rate Statistics by Gender ===")
+                gender_stats = roadtraffic_df.groupby('Sex')['RoadTrafficDeathRate'].agg(['count', 'mean', 'std']).round(2)
+                print(gender_stats)
+                
+                # Compare male vs female death rates
+                latest_year = roadtraffic_df['Year'].max()
+                latest_roadtraffic = roadtraffic_df[roadtraffic_df['Year'] == latest_year]
+                
+                if not latest_roadtraffic.empty:
+                    print(f"\n=== Gender Comparison for {latest_year:.0f} ===")
+                    gender_comparison = latest_roadtraffic.groupby('Sex')['RoadTrafficDeathRate'].agg(['mean', 'std']).round(2)
+                    print(gender_comparison)
+                    
+                    # Countries with highest/lowest death rates by gender
+                    for sex in ['Male', 'Female']:
+                        sex_data = latest_roadtraffic[latest_roadtraffic['Sex'] == sex]
+                        if not sex_data.empty:
+                            print(f"\nTop 10 countries with highest road traffic crash death rates ({sex}) in {latest_year:.0f}:")
+                            top_10 = sex_data.nlargest(10, 'RoadTrafficDeathRate')[['Country', 'RoadTrafficDeathRate']]
+                            print(top_10.to_string(index=False))
+                            
+                            print(f"\nBottom 10 countries with lowest road traffic crash death rates ({sex}) in {latest_year:.0f}:")
+                            bottom_10 = sex_data.nsmallest(10, 'RoadTrafficDeathRate')[['Country', 'RoadTrafficDeathRate']]
+                            print(bottom_10.to_string(index=False))
+        else:
+            print("No road traffic crash death rate data found.")
+    
+    # Download maternal mortality data if requested
+    if download_maternal:
+        print("\n" + "="*60)
+        print("=== MATERNAL MORTALITY RATIO ===")
+        print("="*60)
+        
+        # Get maternal mortality ratio
+        maternal_df = client.get_maternal_mortality_ratio(years=years)
+        
+        if not maternal_df.empty:
+            print(f"\nTotal maternal mortality ratio records: {len(maternal_df)}")
+            print(f"Countries: {maternal_df['Country'].nunique()}")
+            print(f"Years covered: {maternal_df['Year'].min():.0f} - {maternal_df['Year'].max():.0f}")
+            print(f"Indicator: {maternal_df['IndicatorCode'].unique()[0]}")
+            
+            if args.verbose:
+                print("\nSample maternal mortality ratio data:")
+                print(maternal_df.head(10))
+            
+            # Save maternal mortality data to CSV
+            maternal_filename = args.maternal_filename or 'who_maternal_mortality_ratio.csv'
+            maternal_path = os.path.join(args.output_dir, maternal_filename)
+            maternal_df.to_csv(maternal_path, index=False)
+            print(f"\n=== Maternal mortality ratio data saved to {maternal_path} ===")
+            
+            if show_examples:
+                # Analyze by year
+                print("\n=== Maternal Mortality Ratio Statistics ===")
+                year_stats = maternal_df.groupby('Year')['MaternalMortalityRatio'].agg(['count', 'mean', 'std', 'min', 'max']).round(2)
+                print(year_stats)
+                
+                # Countries with highest/lowest maternal mortality (most recent data)
+                latest_year = maternal_df['Year'].max()
+                latest_maternal = maternal_df[maternal_df['Year'] == latest_year]
+                
+                if not latest_maternal.empty:
+                    print(f"\n=== Countries with Highest/Lowest Maternal Mortality Ratio in {latest_year:.0f} ===")
+                    print(f"\nTop 10 countries with highest maternal mortality ratio:")
+                    top_10 = latest_maternal.nlargest(10, 'MaternalMortalityRatio')[['Country', 'MaternalMortalityRatio']]
+                    print(top_10.to_string(index=False))
+                    
+                    print(f"\nBottom 10 countries with lowest maternal mortality ratio:")
+                    bottom_10 = latest_maternal.nsmallest(10, 'MaternalMortalityRatio')[['Country', 'MaternalMortalityRatio']]
+                    print(bottom_10.to_string(index=False))
+        else:
+            print("No maternal mortality ratio data found.")
+    
+    # Download homicide data if requested
+    if download_homicide:
+        print("\n" + "="*60)
+        print("=== HOMICIDE RATES BY GENDER ===")
+        print("="*60)
+        
+        # Get homicide rates
+        homicide_df = client.get_homicide_rates(years=years)
+        
+        if not homicide_df.empty:
+            print(f"\nTotal homicide rate records: {len(homicide_df)}")
+            print(f"Countries: {homicide_df['Country'].nunique()}")
+            print(f"Years covered: {homicide_df['Year'].min():.0f} - {homicide_df['Year'].max():.0f}")
+            print(f"Sex categories: {homicide_df['Sex'].unique()}")
+            print(f"Indicator: {homicide_df['IndicatorCode'].unique()[0]}")
+            
+            if args.verbose:
+                print("\nSample homicide rate data:")
+                print(homicide_df.head(10))
+            
+            # Save homicide data to CSV
+            homicide_filename = args.homicide_filename or 'who_homicide_rates.csv'
+            homicide_path = os.path.join(args.output_dir, homicide_filename)
+            homicide_df.to_csv(homicide_path, index=False)
+            print(f"\n=== Homicide rate data saved to {homicide_path} ===")
+            
+            if show_examples:
+                # Analyze by gender
+                print("\n=== Homicide Rate Statistics by Gender ===")
+                gender_stats = homicide_df.groupby('Sex')['HomicideRate'].agg(['count', 'mean', 'std']).round(2)
+                print(gender_stats)
+                
+                # Compare male vs female homicide rates
+                latest_year = homicide_df['Year'].max()
+                latest_homicide = homicide_df[homicide_df['Year'] == latest_year]
+                
+                if not latest_homicide.empty:
+                    print(f"\n=== Gender Comparison for {latest_year:.0f} ===")
+                    gender_comparison = latest_homicide.groupby('Sex')['HomicideRate'].agg(['mean', 'std']).round(2)
+                    print(gender_comparison)
+                    
+                    # Countries with highest/lowest homicide rates by gender
+                    for sex in ['Male', 'Female']:
+                        sex_data = latest_homicide[latest_homicide['Sex'] == sex]
+                        if not sex_data.empty:
+                            print(f"\nTop 10 countries with highest homicide rates ({sex}) in {latest_year:.0f}:")
+                            top_10 = sex_data.nlargest(10, 'HomicideRate')[['Country', 'HomicideRate']]
+                            print(top_10.to_string(index=False))
+                            
+                            print(f"\nBottom 10 countries with lowest homicide rates ({sex}) in {latest_year:.0f}:")
+                            bottom_10 = sex_data.nsmallest(10, 'HomicideRate')[['Country', 'HomicideRate']]
+                            print(bottom_10.to_string(index=False))
+        else:
+            print("No homicide rate data found.")
+    
+    # Download IPV data if requested
+    if download_ipv:
+        print("\n" + "="*60)
+        print("=== INTIMATE PARTNER VIOLENCE PREVALENCE ===")
+        print("="*60)
+        
+        # Get intimate partner violence prevalence
+        ipv_df = client.get_intimate_partner_violence(years=years)
+        
+        if not ipv_df.empty:
+            print(f"\nTotal intimate partner violence prevalence records: {len(ipv_df)}")
+            print(f"Countries: {ipv_df['Country'].nunique()}")
+            print(f"Years covered: {ipv_df['Year'].min():.0f} - {ipv_df['Year'].max():.0f}")
+            print(f"Indicator: {ipv_df['IndicatorCode'].unique()[0]}")
+            
+            if args.verbose:
+                print("\nSample intimate partner violence prevalence data:")
+                print(ipv_df.head(10))
+            
+            # Save IPV data to CSV
+            ipv_filename = args.ipv_filename or 'who_ipv_prevalence.csv'
+            ipv_path = os.path.join(args.output_dir, ipv_filename)
+            ipv_df.to_csv(ipv_path, index=False)
+            print(f"\n=== Intimate partner violence prevalence data saved to {ipv_path} ===")
+            
+            if show_examples:
+                # Analyze by year
+                print("\n=== Intimate Partner Violence Prevalence Statistics ===")
+                year_stats = ipv_df.groupby('Year')['IPVPrevalence'].agg(['count', 'mean', 'std', 'min', 'max']).round(2)
+                print(year_stats)
+                
+                # Countries with highest/lowest IPV prevalence (most recent data)
+                latest_year = ipv_df['Year'].max()
+                latest_ipv = ipv_df[ipv_df['Year'] == latest_year]
+                
+                if not latest_ipv.empty:
+                    print(f"\n=== Countries with Highest/Lowest IPV Prevalence in {latest_year:.0f} ===")
+                    print(f"\nTop 10 countries with highest IPV prevalence:")
+                    top_10 = latest_ipv.nlargest(10, 'IPVPrevalence')[['Country', 'IPVPrevalence']]
+                    print(top_10.to_string(index=False))
+                    
+                    print(f"\nBottom 10 countries with lowest IPV prevalence:")
+                    bottom_10 = latest_ipv.nsmallest(10, 'IPVPrevalence')[['Country', 'IPVPrevalence']]
+                    print(bottom_10.to_string(index=False))
+        else:
+            print("No intimate partner violence prevalence data found.")
+    
+    # Download diabetes death rate data if requested
+    if download_diabetes:
+        print("\n" + "="*60)
+        print("=== DIABETES DEATH RATES BY GENDER ===")
+        print("="*60)
+        
+        # Get diabetes death rates
+        diabetes_df = client.get_diabetes_death_rates(years=years)
+        
+        if not diabetes_df.empty:
+            print(f"\nTotal diabetes death rate records: {len(diabetes_df)}")
+            print(f"Countries: {diabetes_df['Country'].nunique()}")
+            print(f"Years covered: {diabetes_df['Year'].min():.0f} - {diabetes_df['Year'].max():.0f}")
+            print(f"Sex categories: {diabetes_df['Sex'].unique()}")
+            print(f"Indicator: {diabetes_df['IndicatorCode'].unique()[0]}")
+            
+            if args.verbose:
+                print("\nSample diabetes death rate data:")
+                print(diabetes_df.head(10))
+            
+            # Save diabetes data to CSV
+            diabetes_filename = args.diabetes_filename or 'who_diabetes_death_rates.csv'
+            diabetes_path = os.path.join(args.output_dir, diabetes_filename)
+            diabetes_df.to_csv(diabetes_path, index=False)
+            print(f"\n=== Diabetes death rate data saved to {diabetes_path} ===")
+            
+            if show_examples:
+                # Analyze by gender
+                print("\n=== Diabetes Death Rate Statistics by Gender ===")
+                gender_stats = diabetes_df.groupby('Sex')['DiabetesDeathRate'].agg(['count', 'mean', 'std']).round(2)
+                print(gender_stats)
+                
+                # Compare male vs female death rates
+                latest_year = diabetes_df['Year'].max()
+                latest_diabetes = diabetes_df[diabetes_df['Year'] == latest_year]
+                
+                if not latest_diabetes.empty:
+                    print(f"\n=== Gender Comparison for {latest_year:.0f} ===")
+                    gender_comparison = latest_diabetes.groupby('Sex')['DiabetesDeathRate'].agg(['mean', 'std']).round(2)
+                    print(gender_comparison)
+                    
+                    # Countries with highest/lowest death rates by gender
+                    for sex in ['Male', 'Female']:
+                        sex_data = latest_diabetes[latest_diabetes['Sex'] == sex]
+                        if not sex_data.empty:
+                            print(f"\nTop 10 countries with highest diabetes death rates ({sex}) in {latest_year:.0f}:")
+                            top_10 = sex_data.nlargest(10, 'DiabetesDeathRate')[['Country', 'DiabetesDeathRate']]
+                            print(top_10.to_string(index=False))
+                            
+                            print(f"\nBottom 10 countries with lowest diabetes death rates ({sex}) in {latest_year:.0f}:")
+                            bottom_10 = sex_data.nsmallest(10, 'DiabetesDeathRate')[['Country', 'DiabetesDeathRate']]
+                            print(bottom_10.to_string(index=False))
+        else:
+            print("No diabetes death rate data found.")
+    
+    # Download under-five mortality rate data if requested
+    if download_u5mr:
+        print("\n" + "="*60)
+        print("=== UNDER-FIVE MORTALITY RATE ===")
+        print("="*60)
+        
+        u5mr_df = client.get_under_five_mortality_rate(years=years)
+        
+        if not u5mr_df.empty:
+            # Determine output filename
+            if args.u5mr_filename:
+                u5mr_path = args.u5mr_filename
+            else:
+                u5mr_path = os.path.join("data", "who_u5mr.csv")
+            
+            # Create data directory if it doesn't exist
+            os.makedirs(os.path.dirname(u5mr_path) if os.path.dirname(u5mr_path) else ".", exist_ok=True)
+            
+            # Save to CSV
+            u5mr_df.to_csv(u5mr_path, index=False)
+            print(f"\n=== Under-five mortality rate data saved to {u5mr_path} ===")
+            
+            if show_examples:
+                # Analyze by gender
+                print("\n=== Under-Five Mortality Rate Statistics by Gender ===")
+                gender_stats = u5mr_df.groupby('Sex')['U5MR'].agg(['count', 'mean', 'std']).round(2)
+                print(gender_stats)
+                
+                # Compare male vs female death rates
+                latest_year = u5mr_df['Year'].max()
+                latest_u5mr = u5mr_df[u5mr_df['Year'] == latest_year]
+                
+                if not latest_u5mr.empty:
+                    print(f"\n=== Gender Comparison for {latest_year:.0f} ===")
+                    gender_comparison = latest_u5mr.groupby('Sex')['U5MR'].agg(['mean', 'std']).round(2)
+                    print(gender_comparison)
+                    
+                    # Countries with highest/lowest death rates by gender
+                    for sex in ['Male', 'Female']:
+                        sex_data = latest_u5mr[latest_u5mr['Sex'] == sex]
+                        if not sex_data.empty:
+                            print(f"\nTop 10 countries with highest under-five mortality rates ({sex}) in {latest_year:.0f}:")
+                            top_10 = sex_data.nlargest(10, 'U5MR')[['Country', 'U5MR']]
+                            print(top_10.to_string(index=False))
+                            
+                            print(f"\nBottom 10 countries with lowest under-five mortality rates ({sex}) in {latest_year:.0f}:")
+                            bottom_10 = sex_data.nsmallest(10, 'U5MR')[['Country', 'U5MR']]
+                            print(bottom_10.to_string(index=False))
+        else:
+            print("No under-five mortality rate data found.")
     
     # Show examples if requested
     if show_examples:
