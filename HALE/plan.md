@@ -151,309 +151,6 @@ cardio_df = client.get_cardiovascular_death_rates()
 - Provides **cardiovascular disease death rates** as a predictor variable
 - Can be extended to retrieve other relevant indicators (smoking, suicide rates, maternal mortality, etc.)
 
-## Data Collection Summary
-
-### Smoking/Tobacco Use Indicators (Downloaded)
-
-Three smoking prevalence indicators have been downloaded from WHO GHO API:
-
-1. **M_Est_smk_curr_std** - Age-standardized current tobacco smoking prevalence (%)
-   - **Records**: 5,181 (includes projections)
-   - **Years**: 2000-2030 (observed: 2000, 2005, 2007, 2010, 2015, 2018, 2020, 2021, 2022; projected: 2025, 2030)
-   - **Countries**: 172
-   - **Sex categories**: Both sexes, Female, Male
-   - **File**: `data/who_smoking_data.csv`
-   - **Status**: ✅ Recommended - age-standardized, good temporal coverage
-   - **Note**: Years 2025 and 2030 are projections (marked in Comments field). Filter these out for analysis of observed data only.
-
-2. **M_Est_cig_curr_std** - Age-standardized current cigarette smoking prevalence (%)
-   - **Records**: 4,950 (likely includes projections)
-   - **Years**: 2000-2030 (includes projected years 2025, 2030)
-   - **Countries**: 165
-   - **Sex categories**: Both sexes, Female, Male
-   - **File**: `data/who_smoking_cigarette_std.csv`
-   - **Status**: ✅ Good - cigarette-specific, age-standardized
-   - **Note**: Check Comments field to identify projected vs. observed data
-
-3. **Adult_curr_tob_smoking** - Current tobacco smoking among adults (%)
-   - **Records**: 570
-   - **Years**: 2001-2022
-   - **Countries**: 190 (most countries)
-   - **Sex categories**: Both sexes, Female, Male
-   - **File**: `data/who_smoking_adult.csv`
-   - **Status**: ✅ Good country coverage but fewer records and shorter time span
-
-**Recommendation**: Use `M_Est_smk_curr_std` as the primary smoking predictor - it has the best combination of temporal coverage, age-standardization, and sufficient country coverage.
-
-### Suicide Rate Indicators (Identified)
-
-Five suicide-related indicators have been identified from WHO GHO API:
-
-1. **MH_12** - Age-standardized suicide rates (per 100,000 population)
-   - **Records**: 12,936
-   - **Years**: 2000-2021
-   - **Countries**: 196
-   - **Sex categories**: Both sexes, Female, Male
-   - **Status**: ✅ Recommended - age-standardized, excellent country coverage, good temporal coverage
-   - **Note**: Age-standardized rates are preferred for HALE analysis since HALE is also age-standardized
-
-2. **SDGSUICIDE** - Crude suicide rates (per 100,000 population)
-   - **Records**: 19,041
-   - **Years**: 2000-2021
-   - **Countries**: 196
-   - **Sex categories**: Both sexes, Female, Male
-   - **Status**: ✅ Good - crude rates, excellent country coverage
-   - **Note**: Crude rates may be less comparable across countries with different age structures
-
-3. **SDG_SH_STA_SCIDEN** - Number of suicide deaths
-   - **Status**: ⚠️ Less useful - absolute numbers rather than rates
-
-4. **PRISON_D3_DEATHS_SUICIDE_MRATE** - In-prison suicide mortality rate
-   - **Status**: ⚠️ Not relevant - prison-specific, not general population
-
-5. **PRISON_B16_SUICIDERISK** - In-prison standardized protocol for suicide
-   - **Status**: ⚠️ Not relevant - protocol indicator, not a rate
-
-**Recommendation**: Use `MH_12` as the primary suicide rate predictor - it has age-standardized rates (matching HALE methodology), excellent country coverage (196 countries), gender breakdowns, and good temporal coverage (2000-2021).
-
-### Alcohol-Attributable Death Rate Indicators (Identified)
-
-Multiple alcohol-related death rate indicators have been identified from WHO GHO API:
-
-1. **SA_0000001832** - Alcohol-attributable all-cause deaths per 100,000, age standardized
-   - **Records**: 540
-   - **Years**: 2019
-   - **Countries**: 180
-   - **Sex categories**: Both sexes, Female, Male
-   - **Status**: ✅ Recommended - age-standardized, good country coverage, most recent data available
-   - **Note**: Age-standardized rates match HALE methodology. This indicator captures all alcohol-attributable deaths (not just alcohol use disorders), providing a broader measure of alcohol's impact on mortality. Only has data for 2019, which limits temporal analysis but provides a good snapshot for cross-country comparison.
-
-2. **SA_0000001437** - Age-standardized death rates, alcohol use disorders, per 100,000
-   - **Records**: 714
-   - **Years**: 2002, 2004 (only 2 years)
-   - **Countries**: 186
-   - **Sex categories**: Both sexes, Female, Male
-   - **Status**: ⚠️ Limited temporal coverage - only 2 years of data, older years (2002, 2004)
-   - **Note**: More specific than SA_0000001832 (focuses on alcohol use disorders rather than all alcohol-attributable deaths), but limited temporal coverage makes it less useful for analysis.
-
-3. **SA_0000001833** - Alcohol-attributable DALYs per 100,000 people (age standardized)
-   - **Years**: 2019
-   - **Countries**: 182
-   - **Records**: 1,092
-   - **Sex categories**: Both sexes, Female, Male
-   - **Status**: ✅ Good - DALYs (Disability-Adjusted Life Years) provide a measure of both mortality and morbidity, but death rates are more directly comparable to HALE
-
-4. **SA_0000001457_AA** - Liver cirrhosis, alcohol-attributable, age-standardized death rates
-   - **Years**: 2019
-   - **Countries**: 180
-   - **Records**: 1,080
-   - **Sex categories**: Both sexes, Female, Male
-   - **Status**: ✅ Good - specific cause of death, but narrower scope than all-cause alcohol-attributable deaths
-
-**Recommendation**: Use `SA_0000001832` as the primary alcohol-attributable death rate predictor - it has age-standardized rates (matching HALE methodology), good country coverage (180 countries), gender breakdowns, and captures all alcohol-attributable deaths (providing a comprehensive measure of alcohol's impact on mortality). The limitation is that it only has data for 2019, but this provides a good cross-sectional snapshot for the analysis.
-
-### Unintentional Poisoning Mortality Rate Indicators (Identified)
-
-Multiple unintentional poisoning-related indicators have been identified from WHO GHO API:
-
-1. **SDGPOISON** - Mortality rate attributed to unintentional poisoning (per 100,000 population)
-   - **Records**: 12,936
-   - **Years**: 2000-2021 (22 years)
-   - **Countries**: 196
-   - **Sex categories**: Both sexes, Female, Male
-   - **Status**: ✅ Recommended - excellent temporal coverage, excellent country coverage, gender breakdowns, includes confidence intervals
-   - **Note**: This is a crude rate (not explicitly age-standardized), but has excellent temporal and country coverage. Unintentional poisoning includes accidental poisonings from chemicals, drugs, and other substances, which can contribute to the gender gap in mortality. Men often have higher rates of accidental deaths, including poisonings.
-
-2. **SA_0000001450** - Age-standardized death rates, poisoning, per 100,000
-   - **Records**: 731
-   - **Years**: 2002, 2004 (only 2 years)
-   - **Countries**: 185
-   - **Sex categories**: Both sexes, Female, Male
-   - **Status**: ⚠️ Limited temporal coverage - only 2 years of data, older years (2002, 2004)
-   - **Note**: Age-standardized rates are preferred for HALE analysis, but limited temporal coverage makes it less useful than SDGPOISON.
-
-3. **SA_0000001458** - Age-standardized death rates (15+ years), poisoning, per 100,000
-   - **Years**: 2002, 2004 (only 2 years)
-   - **Status**: ⚠️ Limited temporal coverage - similar to SA_0000001450 but for ages 15+
-
-4. **SA_0000001837** - Alcohol poisoning deaths, per 100,000 population
-   - **Status**: ⚠️ Narrow scope - only alcohol-related poisonings, not all unintentional poisonings
-
-**Recommendation**: Use `SDGPOISON` as the primary unintentional poisoning mortality rate predictor - it has excellent temporal coverage (2000-2021), excellent country coverage (196 countries), gender breakdowns, and includes confidence intervals. While it's not explicitly age-standardized, the comprehensive temporal and country coverage make it more valuable for analysis than the age-standardized indicators with only 2 years of data. Unintentional poisoning is relevant to the gender gap as men often have higher rates of accidental deaths.
-
-### Road Traffic Crash Death Rate Indicators (Identified)
-
-Multiple road traffic-related death rate indicators have been identified from WHO GHO API:
-
-1. **SA_0000001459** - Road traffic crash deaths, age-standardized death rates (15+), per 100,000 population
-   - **Records**: 1,080
-   - **Years**: 2019
-   - **Countries**: 180
-   - **Sex categories**: Both sexes, Female, Male
-   - **Status**: ✅ Recommended - age-standardized, good country coverage, gender breakdowns, recent data (2019)
-   - **Note**: Age-standardized rates for ages 15+ match HALE methodology (HALE is also age-standardized). Road traffic deaths are a major contributor to the gender gap in mortality, as men typically have much higher rates due to higher exposure to driving (including occupational exposure), occupational hazards, and potentially risk-taking behaviors. The limitation is that it only has data for 2019, but this provides a good cross-sectional snapshot for the analysis.
-
-2. **RS_198** - Estimated road traffic death rate (per 100,000 population)
-   - **Years**: 2021 (only 1 year)
-   - **Countries**: 204
-   - **Sex categories**: None (no gender breakdown)
-   - **Status**: ⚠️ Not suitable - no gender breakdown available
-
-3. **SA_0000001452** - Age-standardized death rates, road traffic accidents, per 100,000
-   - **Years**: 2002, 2004 (only 2 years)
-   - **Countries**: 192
-   - **Sex categories**: Both sexes, Female, Male
-   - **Status**: ⚠️ Limited temporal coverage - only 2 years of older data (2002, 2004)
-
-4. **SA_0000001459_AA** - Road traffic crash deaths, alcohol-attributable, age-standardized death rates
-   - **Years**: 2019
-   - **Countries**: 180
-   - **Sex categories**: Both sexes, Female, Male
-   - **Status**: ⚠️ Narrow scope - only alcohol-attributable road traffic deaths, not all road traffic deaths
-
-**Recommendation**: Use `SA_0000001459` as the primary road traffic crash death rate predictor - it has age-standardized rates (matching HALE methodology), good country coverage (180 countries), gender breakdowns, and captures all road traffic crash deaths (not just alcohol-attributable). The limitation is that it only has data for 2019, but this provides a good cross-sectional snapshot for the analysis. Road traffic deaths are highly relevant to the gender gap as men typically have 2-4 times higher rates than women in most countries.
-
-### Maternal Mortality Ratio Indicators (Identified)
-
-Multiple maternal mortality indicators have been identified from WHO GHO API:
-
-1. **MDG_0000000026** - Maternal mortality ratio (per 100,000 live births)
-   - **Records**: 7,878 (full dataset), 4,848 (2000-2023)
-   - **Years**: 1985-2023 (excellent temporal coverage)
-   - **Countries**: 202
-   - **Sex categories**: N/A (inherently female-specific)
-   - **Status**: ✅ Recommended - excellent temporal coverage, excellent country coverage, most comprehensive dataset
-   - **Note**: Maternal mortality is inherently female-specific (deaths during pregnancy, childbirth, or within 42 days of termination of pregnancy). This indicator is critical for understanding cases where the HALE gender gap is small due to high female mortality, especially in lower-income countries. High maternal mortality can significantly reduce female life expectancy, explaining why some countries have smaller gender gaps.
-
-2. **MDG_0000000032** - Maternal mortality ratio (per 100,000 live births) - Country reported estimates
-   - **Years**: 1987, 2000, 2002-2009 (limited temporal coverage)
-   - **Countries**: 169
-   - **Status**: ⚠️ Limited temporal coverage - only 10 years of data, older years, fewer countries than MDG_0000000026
-
-3. **MORT_MATERNALNUM** - Number of maternal deaths
-   - **Status**: ⚠️ Less useful - absolute numbers rather than rates (rates are more comparable across countries)
-
-**Recommendation**: Use `MDG_0000000026` as the primary maternal mortality ratio predictor - it has excellent temporal coverage (1985-2023), excellent country coverage (202 countries), and is the most comprehensive dataset available. Maternal mortality is a critical factor for understanding female mortality patterns, especially in lower-income countries where high maternal mortality can significantly reduce the HALE gender gap by lowering female life expectancy.
-
-### Homicide Rate Indicators (Identified)
-
-Two homicide-related indicators have been identified from WHO GHO API:
-
-1. **VIOLENCE_HOMICIDERATE** - Estimates of rates of homicides per 100,000 population
-   - **Records**: 12,936
-   - **Years**: 2000-2021 (excellent temporal coverage)
-   - **Countries**: 196
-   - **Sex categories**: Both sexes, Female, Male
-   - **Status**: ✅ Implemented - excellent temporal coverage, excellent country coverage, gender breakdowns, includes confidence intervals
-   - **Note**: This is a crude rate (not explicitly age-standardized), but has excellent temporal and country coverage. Homicide rates are typically much higher in men than women across most countries, making it a major contributor to the gender gap in mortality. Homicide reflects violence, conflict, and social factors that differentially affect men and women.
-
-2. **VIOLENCE_HOMICIDENUM** - Estimates of number of homicides
-   - **Years**: 2000-2019 (slightly less recent than rate indicator)
-   - **Countries**: 194
-   - **Sex categories**: Both sexes, Female, Male
-   - **Status**: ⚠️ Less useful - absolute numbers rather than rates (rates are more comparable across countries), and has less recent data (up to 2019 vs 2021)
-
-**Recommendation**: Use `VIOLENCE_HOMICIDERATE` as the primary homicide rate predictor - it has excellent temporal coverage (2000-2021), excellent country coverage (196 countries), gender breakdowns, and includes confidence intervals. ✅ **Implemented** - Data download functionality added to `who_data.py`. While it's not explicitly age-standardized, the comprehensive temporal and country coverage make it very valuable for analysis. Homicide is highly relevant to the gender gap as men typically have much higher rates than women in most countries, making it a major contributor to the gender gap in mortality.
-
-### Intimate Partner Violence (IPV) Indicators (Identified)
-
-Multiple intimate partner violence indicators have been identified from WHO GHO API. Note: IPV is a **prevalence indicator** (percentage of women experiencing violence), not a direct death rate. It affects women's health and mortality indirectly through mental health, injuries, and other health consequences.
-
-1. **SDGIPV** - Proportion of ever-partnered women and girls aged 15-49 years subjected to physical and/or sexual violence by a current or former intimate partner in the previous 12 months
-   - **Records**: 577
-   - **Years**: 2000-2017
-   - **Countries**: 126
-   - **Sex categories**: Female (inherently female-specific)
-   - **Status**: ✅ Implemented - good temporal coverage, good country coverage, matches SDG indicator 5.2.1
-   - **Note**: This is a prevalence indicator (percentage), not a death rate. IPV affects women's health indirectly through mental health impacts, injuries, and other health consequences. It may contribute to the gender gap in HALE through its effects on women's physical and mental health, though the relationship is complex and indirect.
-
-2. **SDGIPV12M** - Proportion of ever-partnered women and girls aged 15–49 years subjected to physical and/or sexual violence by a current or former intimate partner in the previous 12 months
-   - **Years**: 2018 (only 1 year)
-   - **Countries**: 163
-   - **Status**: ⚠️ Limited temporal coverage - only 2018 data, but good country coverage
-
-3. **SDGIPVLT** - Proportion of ever-partnered women and girls aged 15–49 years subjected to physical and/or sexual violence by a current or former intimate partner in their lifetime
-   - **Years**: 2018 (only 1 year)
-   - **Countries**: 158
-   - **Status**: ⚠️ Limited temporal coverage - only 2018 data, lifetime prevalence (broader than 12-month)
-
-4. **RHR_IPV** - Intimate partner violence prevalence among ever partnered women (%)
-   - **Years**: 2010 (only 1 year)
-   - **Countries**: 29
-   - **Status**: ⚠️ Very limited coverage - only 2010, only 29 countries
-
-5. **SA_0000001455** - Age-standardized death rates, violence, per 100,000
-   - **Years**: 2002, 2004 (only 2 years)
-   - **Countries**: 192
-   - **Sex categories**: Both sexes, Female, Male
-   - **Status**: ⚠️ Limited temporal coverage - only 2 years, but age-standardized and has gender breakdowns. This captures all violence-related deaths (not just IPV), which may include homicide and other forms of violence.
-
-**Recommendation**: Use `SDGIPV` as the primary intimate partner violence indicator - it has the best temporal coverage (2000-2017) and good country coverage (126 countries). ✅ **Implemented** - Data download functionality added to `who_data.py`. However, note that IPV is a prevalence indicator affecting women's health indirectly, not a direct cause of death. It may be less directly relevant to HALE gender gap analysis than direct mortality indicators, but could be useful for understanding broader health impacts on women. Consider whether the indirect relationship to mortality makes it suitable for the regression analysis, or if it should be analyzed separately.
-
-### Infant and Child Mortality Indicators (Explored)
-
-Multiple indicators related to infant, neonatal, and under-five mortality have been identified from WHO GHO API. Note: These indicators measure mortality in early life (birth to age 5), which may be less directly relevant to HALE gender gap analysis since HALE focuses on adult health outcomes. However, early-life mortality patterns can reflect underlying health disparities and may be relevant for understanding population-level gender differences.
-
-#### Infant Mortality Indicators (with gender breakdowns):
-
-1. **imr** - Infant mortality rate (deaths per 1000 live births)
-   - **Years**: 1932-2023 (excellent temporal coverage)
-   - **Countries**: 249
-   - **Sex categories**: Both sexes, Female, Male
-   - **Total records**: 43,513
-   - **Status**: ✅ Excellent coverage - has gender breakdowns, very long temporal coverage, comprehensive country coverage
-
-2. **MDG_0000000001** - Infant mortality rate (probability of dying between birth and age 1 per 1000 live births)
-   - **Years**: 1932-2023 (excellent temporal coverage)
-   - **Countries**: 249
-   - **Sex categories**: Both sexes, Female, Male
-   - **Total records**: 43,513
-   - **Status**: ✅ Excellent coverage - similar to `imr`, has gender breakdowns, very long temporal coverage
-
-3. **CM_02** - Number of infant deaths
-   - **Years**: 1951-2023
-   - **Countries**: 249
-   - **Sex categories**: Both sexes, Female, Male
-   - **Total records**: 42,716
-   - **Status**: ⚠️ Less useful - absolute numbers rather than rates (rates are more comparable across countries), and has less recent historical data (starts 1951 vs 1932)
-
-#### Under-Five Mortality Indicators (with gender breakdowns):
-
-1. **u5mr** - Under-five mortality rate (deaths per 1000 live births)
-   - **Years**: 1932-2023 (excellent temporal coverage)
-   - **Countries**: 249
-   - **Sex categories**: Both sexes, Female, Male
-   - **Total records**: 63,070
-   - **Status**: ✅ Excellent coverage - has gender breakdowns, very long temporal coverage, comprehensive country coverage
-
-2. **MDG_0000000007** - Under-five mortality rate (probability of dying by age 5 per 1000 live births)
-   - **Years**: 1932-2023 (excellent temporal coverage)
-   - **Countries**: 249
-   - **Sex categories**: Both sexes, Female, Male
-   - **Total records**: 63,070 (30,648 with sex dimension when filtered)
-   - **Status**: ✅ **Implemented** - Recommended and data download functionality added to `who_data.py`. Excellent coverage with clean gender breakdowns (5,976 Male, 5,976 Female records). Much better data quality than `u5mr` when filtered for sex dimension.
-
-**Recommendation**: 
-
-**For HALE gender gap analysis**: These indicators **SHOULD be considered** for inclusion in the regression model because:
-1. **HALE is calculated from birth** - HALE (Healthy Life Expectancy) measures expected years of healthy life at birth, so it includes all mortality from birth to death. If infant/child mortality differs by gender, it directly affects the HALE calculation and contributes to the gender gap.
-2. **Goal is to explain the gap** - The purpose of the model is to estimate what portion of the HALE gender gap is explainable by each factor. If infant/child mortality contributes to the gap, it should be included to properly attribute its contribution.
-3. **Gender differences exist** - Infant mortality is typically higher in males, and this gender difference will affect HALE calculations. Under-five mortality also shows gender differences that should be accounted for.
-
-**However**, note that:
-- **Relative contribution may be smaller** - In most countries, adult mortality patterns (smoking, cardiovascular disease, accidents, violence) likely contribute more to the HALE gender gap than infant/child mortality, especially in high-income countries. But the relative contribution should be determined empirically, not assumed.
-- **More important in lower-income countries** - In countries with high infant/child mortality rates, these factors may contribute more substantially to the HALE gender gap.
-- **Different causal pathways** - Early-life mortality is driven by different factors (infectious diseases, malnutrition, birth complications) than adult mortality (chronic diseases, accidents, violence, lifestyle factors), so including both provides a more complete picture.
-
-**Recommendation for HALE model**: 
-- **Include infant mortality rate (male vs. female difference or ratio)** - Use `imr` or `MDG_0000000001` as a predictor to quantify its contribution to the HALE gender gap.
-- **Include under-five mortality rate** - Use `MDG_0000000007` (not `u5mr`) as the predictor. ✅ **Implemented** - Data download functionality added to `who_data.py`.
-  - **Why MDG_0000000007 over u5mr**: While both indicators have similar metadata (249 countries, 1932-2023), `MDG_0000000007` provides much better data quality when filtered for sex dimension:
-    - `MDG_0000000007`: 30,648 records with sex dimension (5,976 Male, 5,976 Female, 18,696 Both sexes), clean structure with proper gender breakdowns
-    - `u5mr`: Only 724 records with sex dimension, many records have other dimension types (age groups, regions, wealth quintiles) mixed in, making the data messy and harder to work with
-    - Both have the same temporal and country coverage, but `MDG_0000000007` has cleaner, more usable data for gender gap analysis
-- Infant and under-five mortality are correlated, so test both to see which provides better explanatory power or include both if they capture different aspects.
-- The rate indicators (`imr`, `MDG_0000000007`) are preferable to absolute number indicators for cross-country comparison.
 
 ## Methodology
 
@@ -528,6 +225,15 @@ Possible predictors:
    - Use `MDG_0000000007` indicator (not `u5mr` - see recommendation section for explanation of why MDG_0000000007 has better data quality)
    - ✅ **Implemented** - Data download functionality added to `who_data.py`
    - Consider testing both infant and under-five mortality to see which provides better explanatory power
+
+11. **Diabetes death rates (male vs. female difference or ratio)**
+   - Age-standardized death rates, diabetes mellitus, per 100,000
+   - Directly measurable and linked to mortality
+   - Age-standardized rates match HALE methodology
+   - Good country coverage (191 countries)
+   - ✅ **Implemented** - Data download functionality added to `who_data.py`
+   - **Limitation**: Only has data for 2004 (similar to cardiovascular disease indicators), which limits temporal analysis but provides a good cross-sectional snapshot
+   - Diabetes mortality can contribute to the HALE gender gap, though the relative importance may vary by country and healthcare access
 
 **Control variables:**
 - Overall life expectancy (to control for general health level)
@@ -611,6 +317,7 @@ The following recommendations are organized by priority and relevance:
 - Homicide rates (male vs. female difference/ratio)
 - Infant mortality rate (male vs. female difference/ratio) ← Also in HALE model
 - Under-five mortality rate (male vs. female difference/ratio) ← Also in HALE model (optional)
+- Diabetes death rates (male vs. female difference/ratio) ← Also in HALE model
 
 **Control variables:**
 - GDP per capita
@@ -624,55 +331,236 @@ The following recommendations are organized by priority and relevance:
 - HIV/AIDS mortality rates
 - Diabetes death rates
 
-## Promising Indicators Checklist
-
-Based on the [WHO GHO Indicators Index](https://www.who.int/data/gho/data/indicators/indicators-index), the following indicators are most relevant for analyzing HALE gender gaps. They are likely to differ between men and women and are related to causes of death.
-
-### Already Implemented ✅
-- [x] **HALE (Healthy Life Expectancy)** - Target variable (WHOSIS_000002)
-- [x] **Cardiovascular disease death rates** - Age-standardized, by gender
-- [x] **Smoking prevalence** - Age-standardized tobacco smoking, by gender (M_Est_smk_curr_std)
-- [x] **Suicide rates** - Age-standardized, by gender (MH_12)
-- [x] **Alcohol-attributable death rates** - Age-standardized, by gender (SA_0000001832)
-- [x] **Unintentional poisoning mortality rates** - By gender (SDGPOISON)
-- [x] **Road traffic crash death rates** - Age-standardized (15+), by gender (SA_0000001459)
-- [x] **Maternal mortality ratio** - Per 100,000 live births, female-specific (MDG_0000000026)
-- [x] **Homicide rates** - By gender (VIOLENCE_HOMICIDERATE)
-- [x] **Intimate partner violence prevalence** - Female-specific, prevalence indicator (SDGIPV)
-- [x] **Under-five mortality rate** - By gender (MDG_0000000007) - Note: MDG_0000000007 chosen over u5mr for better data quality
-
-### High Priority - To Investigate
-- [ ] **Tuberculosis deaths** - May have gender differences; TB deaths (excluding HIV)
-- [ ] **HIV/AIDS mortality rates** - Can have gender differences, especially in certain regions
-- [ ] **Diabetes death rates** - Age-standardized, by gender
-- [ ] **Chronic respiratory disease death rates** - Age-standardized, by gender (COPD, asthma, etc.)
-- [ ] **Liver disease/cirrhosis death rates** - Age-standardized, by gender (alcohol-related and other)
-- [ ] **Kidney disease death rates** - Age-standardized, by gender
-- [ ] **Cancer death rates (specific types)** - Lung cancer, liver cancer, etc. (gender-specific patterns)
-
-### Medium Priority - To Investigate
-- [ ] **Air pollution attributable death rates** - May have gender differences due to occupational exposure
-- [ ] **Occupational injury death rates** - Likely much higher in men
-- [ ] **Drowning death rates** - May have gender differences
-- [ ] **Fire/burn death rates** - May have gender differences
-- [ ] **Falls death rates** - May have gender differences, especially in elderly
-- [ ] **Ischemic heart disease death rates** - More specific than general cardiovascular
-- [ ] **Stroke death rates** - Age-standardized, by gender
-
-### Lower Priority - May Be Useful
-- [ ] **Adult mortality rate (15-60 years)** - Probability of dying, by gender
-- [ ] **Adolescent mortality rate** - May show early gender differences
-- [ ] **Underweight prevalence (adults)** - BMI < 18.5, may affect mortality differently by gender
-- [ ] **Obesity prevalence** - May have different mortality implications by gender
-
-**Notes:**
-- Focus on indicators with age-standardized rates when available (matches HALE methodology)
-- Prioritize indicators with gender breakdowns (Male, Female, Both sexes)
-- Consider temporal coverage - indicators with multiple years are preferred
-- Some indicators may need to be searched by alternative names or codes
 
 ## Analysis Steps
-<!-- Outline the steps you'll take -->
+
+### Phase 1: Data Preparation (OECD Countries, Most Recent Data)
+
+**Step 1.1: Load and Prepare Data Using Existing Functions**
+- Use existing functions from `hale.md`:
+  - `load_and_inventory(filename)` - Loads WHO CSV files, filters to year 2000-2019 (excludes 2020+ to avoid COVID-19 pandemic distortions) and country-level data (CountryCode == "COUNTRY")
+  - `compute_gender_gap(df, value_col, sexes)` - Computes separate columns for each sex and gap column
+  - `summarize_gap(df, col, sexes=None)` - Computes gender gaps and selects most recent year per country
+  - `get_oecd(df)` - Filters DataFrame to OECD countries using `oecd_codes` from `utils.py` (38 countries)
+
+**Note on data years**: We exclude 2020 and later years to avoid COVID-19 pandemic distortions. The pandemic had significant impacts on mortality patterns that may not reflect underlying health factors. Using 2019 or earlier data provides a more stable baseline for understanding the HALE gender gap.
+
+**Step 1.2: Download and Prepare Target Variable (HALE Gender Gap)**
+- Load HALE data: `data/who_hale_data.csv`
+- Use `load_and_inventory()` to load and filter data
+- Map sex codes: `{'SEX_BTSX': 'Both', 'SEX_FMLE': 'Female', 'SEX_MLE': 'Male'}`
+- Use `summarize_gap(hale, 'HALE_Years', sexes=['Male', 'Female'])` to:
+  - Compute separate columns: `HALE_Years_Male` and `HALE_Years_Female`
+  - Select most recent year available for each country
+  - Returns `hale_recent` DataFrame indexed by Country with male/female columns
+- Calculate target variable: `HALE_gap = HALE_Years_Female - HALE_Years_Male` (in years)
+- Filter to OECD countries using `get_oecd(hale_recent)`
+
+**Step 1.3: Download and Prepare Predictor Variables**
+For each predictor, load data and use `summarize_gap()` to get most recent year per country. **Use separate male and female values as predictors** (not gaps), except for female-only indicators (maternal mortality):
+
+1. **Smoking prevalence** - `data/who_smoking_data.csv`
+   - Column: `SmokingPrevalence`
+   - Results: `SmokingPrevalence_Male`, `SmokingPrevalence_Female` (%)
+
+2. **Cardiovascular disease death rates** - `data/who_cardiovascular_death_rates.csv`
+   - Column: `DeathRate`
+   - Results: `DeathRate_Male`, `DeathRate_Female` (per 100,000)
+
+3. **Suicide rates** - `data/who_suicide_rates.csv`
+   - Column: `SuicideRate`
+   - Results: `SuicideRate_Male`, `SuicideRate_Female` (per 100,000)
+
+4. **Alcohol-attributable death rates** - `data/who_alcohol_death_rates.csv`
+   - Column: `AlcoholDeathRate`
+   - Results: `AlcoholDeathRate_Male`, `AlcoholDeathRate_Female` (per 100,000)
+
+5. **Unintentional poisoning rates** - `data/who_poisoning_rates.csv`
+   - Column: `PoisoningRate`
+   - Results: `PoisoningRate_Male`, `PoisoningRate_Female` (per 100,000)
+
+6. **Road traffic crash rates** - `data/who_road_traffic_death_rates.csv`
+   - Column: `RoadTrafficDeathRate`
+   - Results: `RoadTrafficDeathRate_Male`, `RoadTrafficDeathRate_Female` (per 100,000)
+
+7. **Homicide rates** - `data/who_homicide_rates.csv`
+   - Column: `HomicideRate`
+   - Results: `HomicideRate_Male`, `HomicideRate_Female` (per 100,000)
+
+8. **Maternal mortality ratio** - `data/who_maternal_mortality_ratio.csv`
+   - Column: `MaternalMortalityRatio`
+   - Use `summarize_gap(maternal, 'MaternalMortalityRatio', sexes=['Female'])`
+   - Results: `MaternalMortalityRatio_Female` (per 100,000 live births, female-specific)
+
+9. **Under-five mortality rates** - `data/who_u5mr.csv`
+   - Column: `U5MR`
+   - Results: `U5MR_Male`, `U5MR_Female` (per 1,000 live births)
+
+10. **Diabetes death rates** - `data/who_diabetes_death_rates.csv`
+    - Column: `DiabetesDeathRate`
+    - Results: `DiabetesDeathRate_Male`, `DiabetesDeathRate_Female` (per 100,000)
+
+11. **NCD Mortality (30-70 years)** - `data/who_ncd_mortality_30_70.csv`
+    - Column: `NCDMortality30_70`
+    - Results: `NCDMortality30_70_Male`, `NCDMortality30_70_Female` (%)
+    - Note: Combined indicator (cardiovascular, cancer, diabetes, chronic respiratory)
+
+**Note on excluded indicators:**
+- **Intimate Partner Violence (IPV) prevalence** - Excluded from the model because: (1) data is missing for some OECD countries, and (2) it is likely not a strong direct indicator of HALE gender gap (it affects morbidity/quality of life more than mortality, and the relationship to HALE gap is indirect and complex).
+
+- For each indicator:
+  - Use `load_and_inventory()` to load and filter data
+  - Use `summarize_gap()` to get most recent year per country
+  - Filter to OECD countries using `get_oecd()`
+  - For indicators with both male and female data: extract both `_Male` and `_Female` columns (exclude `_Gap` columns to avoid collinearity)
+  - For female-only indicators (maternal mortality): keep the `_Female` column
+
+**Step 1.4: Merge All Predictors into Single Dataset**
+- Merge all predictor DataFrames (indexed by Country) into single country-level dataset
+- Use outer merge to keep all countries, document which countries have missing data for which indicators
+- Create missing data report showing coverage for each indicator across OECD countries
+- The merged dataset will have one row per country with columns for each predictor (male and female separately for most indicators, female-only for maternal mortality)
+
+**Step 1.5: Handle Missing Data and Create Final Dataset**
+- Since missing data is expected to be minimal for OECD countries, use complete-case analysis for primary model
+- Document any countries excluded due to missing critical predictors
+- Create final analysis dataset with:
+  - Target variable: `HALE_gap` (Female - Male, in years)
+  - Predictors: All `_Male` and `_Female` columns from Step 1.3 (plus `MaternalMortalityRatio_Female`)
+  - Index: Country codes (OECD countries only)
+
+
+### Phase 2: Exploratory Data Analysis
+
+**Step 2.1: Descriptive Statistics**
+- Summary statistics for HALE gap and all predictors
+- Distribution plots for HALE gap across OECD countries
+- Identify outliers or influential observations
+
+**Step 2.2: Correlation Analysis**
+- Correlation matrix of all predictors
+- Visualize correlations (heatmap)
+- Identify highly correlated predictors (e.g., smoking ↔ cardiovascular disease)
+- This confirms need for Ridge/Lasso regularization
+
+
+### Phase 3: Model Fitting
+
+**Step 3.1: Model Selection Setup**
+- Split data: Use all OECD countries (no train/test split for initial analysis due to small sample size)
+- Alternative: Use cross-validation for model selection
+- Prepare standardized predictors and target variable
+
+**Step 3.2: Fit Multiple Models**
+Fit three models for comparison:
+1. **Ridge Regression** - Handles multicollinearity, keeps all predictors
+2. **Lasso Regression** - Automatic feature selection, identifies most important factors
+3. **Elastic Net** - Combines Ridge and Lasso benefits
+
+For each model:
+- Use cross-validation (e.g., 5-fold or 10-fold) to select optimal regularization parameter(s)
+- For Elastic Net: optimize both α (Lasso/Ridge mix) and λ (regularization strength)
+- Use `GridSearchCV` or `RidgeCV`/`LassoCV` from scikit-learn
+
+**Step 3.3: Model Comparison**
+- Compare cross-validation scores (R², RMSE) across models
+- Compare coefficient patterns
+- Select primary model (likely Ridge for counterfactual analysis, or Elastic Net for feature selection)
+
+### Phase 4: Model Interpretation
+
+**Step 4.1: Coefficient Analysis** ✅ **COMPLETE**
+- ✅ Extract coefficients from selected model (on standardized scale) - Done in `hale.md` "Extract Elastic Net Coefficients" section
+- ✅ Calculate feature importance: `importance = |coefficient| × std(predictor)` - Done in "Calculate Feature Importance" section
+- ✅ Rank predictors by importance to identify largest contributors to HALE gap variation - Done, sorted by importance
+- ✅ Calculate indicator-level importance (aggregating male and female predictors) - Done in "Importance by Indicator" section
+- ✅ Calculate counterfactual predictions (predicted change in HALE gap if male = female for each indicator) - Done in "Summary: Indicator Analysis and Counterfactual Predictions" section
+
+**Step 4.2: Model Diagnostics** ⚠️ **PARTIAL**
+- ✅ Calculate R² (explained variance) - R² calculated via cross-validation in Phase 3 (CV_R2_Score)
+- ❌ Residual analysis (check for patterns, outliers) - Not yet implemented
+- ❌ Check for influential observations (Cook's distance, leverage) - Not yet implemented
+
+**Step 4.3: Feature Importance Visualization** ✅ **COMPLETE**
+- ✅ Create bar chart showing coefficient magnitudes (standardized) - Done in "Visualize Predictor Importance" section (top 15 predictors)
+- ✅ Highlight top contributors to HALE gap variation - Done in "Top Contributors to HALE Gap" section
+- ✅ Create indicator-level importance visualization - Done in "Visualize Indicator Importance" section
+- ⚠️ Compare importance across different models (Ridge vs Lasso vs Elastic Net) - Coefficients extracted for all three models in Phase 3, but importance visualization only done for Elastic Net (selected as primary model)
+
+### Phase 5: Counterfactual Analysis
+
+**Note**: Some counterfactual analysis has been completed in Phase 4 (see "Summary: Indicator Analysis and Counterfactual Predictions" section in `hale.md`), which calculates predicted changes in HALE gap if male values equal female values for each indicator. Phase 5 focuses on more systematic country-to-country counterfactual scenarios.
+
+**Step 5.1: Create Counterfactual Function**
+Develop function to calculate impact of changing predictor values (male, female, or both):
+```python
+def counterfactual_impact(model, country_data, predictor_name, new_male_value=None, new_female_value=None):
+    """
+    Calculate how much HALE gap would change if predictor value(s) changed.
+    
+    Parameters:
+    - model: Fitted regression model
+    - country_data: Dictionary/Series of current predictor values for a country
+    - predictor_name: Base name of predictor to change (e.g., 'SmokingPrevalence', 'MaternalMortalityRatio')
+    - new_male_value: New value for male predictor (standardized), None to keep original
+    - new_female_value: New value for female predictor (standardized), None to keep original
+    
+    Returns:
+    - ΔHALE_gap: Change in predicted HALE gap (in years)
+    """
+    # Create modified data with new predictor value(s)
+    # Predict HALE gap with original and modified data
+    # Return difference
+```
+
+**Step 5.2: Run Counterfactual Scenarios**
+- Select country pairs of interest (e.g., US vs Netherlands, US vs other OECD countries)
+- For each pair, systematically change each predictor from country A to country B's values
+  - Can change male value, female value, or both
+  - Example: Change US male smoking to Netherlands male smoking value
+  - Example: Change both US male and female smoking to Netherlands values
+  - Example: Change US maternal mortality to Netherlands maternal mortality
+- Calculate predicted change in HALE gap for each counterfactual
+- Identify which factors (and which gender) would have largest impact on closing the gap
+
+**Step 5.3: Summarize Counterfactual Results**
+- Create table/matrix showing counterfactual impacts
+- Visualize which factors would have largest impact for specific country comparisons
+- Identify most actionable factors (e.g., if reducing overdose rates would have large impact)
+
+### Phase 6: Sensitivity Analysis
+
+**Step 6.1: Robustness Checks**
+- Test model with different predictor combinations (e.g., exclude highly correlated predictors)
+- Test sensitivity to outliers (remove influential observations, refit model)
+- Test sensitivity to missing data (impute vs complete-case analysis)
+
+**Step 6.2: Alternative Specifications**
+- Test models with different predictor transformations (e.g., ratios instead of differences)
+- Compare results across Ridge, Lasso, and Elastic Net models
+- Document any substantial differences in conclusions
+
+### Phase 7: Documentation and Reporting
+
+**Step 7.1: Document Findings**
+- Summarize which factors explain largest portions of HALE gap variation
+- Document model performance (R², cross-validation scores)
+- Report counterfactual insights (which factors would have largest impact)
+
+**Step 7.2: Prepare for Future Analysis**
+- Document data limitations and coverage
+- Note any countries excluded and reasons
+- Prepare framework for temporal analysis (Phase 2, future work)
+- Prepare framework for larger country set analysis (future work)
+
+### Implementation Notes
+
+- **Primary Tools**: scikit-learn for model fitting (`Ridge`, `Lasso`, `ElasticNet`, `GridSearchCV`, `StandardScaler`)
+- **Secondary Tools**: statsmodels for diagnostics if needed
+- **Data Sources**: Use `who_data.py` for downloading WHO indicators
+- **Country Codes**: Use `oecd_codes` from `utils.py` for OECD country filtering
+- **Target Variable**: HALE gap = Female HALE - Male HALE (difference, not ratio)
+- **Focus**: Direct causal indicators only (mortality/health indicators), not indirect indicators like GDP
 
 ## Expected Outcomes
 <!-- What do you hope to discover? -->

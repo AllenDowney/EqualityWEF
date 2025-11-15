@@ -539,6 +539,83 @@ class WHOGHOClient:
         
         return df
 
+    def get_ncd_mortality_30_70(self, years: Optional[List[int]] = None) -> pd.DataFrame:
+        """
+        Retrieve probability of dying between age 30 and exact age 70 from any of 
+        cardiovascular disease, cancer, diabetes, or chronic respiratory disease by gender.
+        
+        Note: This indicator combines multiple causes of death (cardiovascular disease,
+        cancer, diabetes, chronic respiratory disease), so it's less specific than
+        individual cause indicators but has better temporal coverage (2000-2021).
+        
+        Args:
+            years: List of specific years to retrieve. If None, gets all available years.
+            
+        Returns:
+            Pandas DataFrame with NCD mortality probability data by gender
+        """
+        print("Fetching NCD mortality (30-70 years) data from WHO GHO API...")
+        
+        # NCDMORT3070 is the indicator code for probability of dying between age 30 and 70
+        # from cardiovascular disease, cancer, diabetes, or chronic respiratory disease
+        indicator_code = "NCDMORT3070"
+        indicator_name = "Probability (%) of dying between age 30 and exact age 70 from any of cardiovascular disease, cancer, diabetes, or chronic respiratory disease"
+        
+        print(f"Fetching indicator: {indicator_code} ({indicator_name})")
+        # Use OData filter to get only specified years at API level
+        data = self.get_indicator_data(indicator_code, years=years)
+        
+        if not data or 'value' not in data or len(data['value']) == 0:
+            print(f"No data found for {indicator_code}")
+            return pd.DataFrame()
+        
+        print(f"Found {len(data['value'])} records for {indicator_code}")
+        records = []
+        
+        for item in data['value']:
+            try:
+                record = {
+                    'IndicatorCode': indicator_code,
+                    'IndicatorName': indicator_name,
+                    'Country': item.get('SpatialDim', ''),
+                    'CountryCode': item.get('SpatialDimType', ''),
+                    'Year': item.get('TimeDim', ''),
+                    'Sex': self._parse_sex_dimension(item.get('Dim1', '')),
+                    'NCDMortality30_70': item.get('NumericValue', None),
+                    'NCDMortality30_70_Low': item.get('Low', None),
+                    'NCDMortality30_70_High': item.get('High', None),
+                    'Comments': item.get('Comments', ''),
+                    'DataSource': item.get('DataSourceDim', ''),
+                }
+                
+                # If years were specified, API already filtered, but double-check
+                if years is None or int(record['Year']) in years:
+                    records.append(record)
+                    
+            except (ValueError, TypeError) as e:
+                print(f"Error processing record: {e}")
+                continue
+        
+        df = pd.DataFrame(records)
+        
+        # Clean and format the data
+        if not df.empty:
+            df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
+            df['NCDMortality30_70'] = pd.to_numeric(df['NCDMortality30_70'], errors='coerce')
+            df['NCDMortality30_70_Low'] = pd.to_numeric(df['NCDMortality30_70_Low'], errors='coerce')
+            df['NCDMortality30_70_High'] = pd.to_numeric(df['NCDMortality30_70_High'], errors='coerce')
+            
+            # Sort by country, sex, and year
+            df = df.sort_values(['Country', 'Sex', 'Year']).reset_index(drop=True)
+        
+        print(f"\nRetrieved {len(df)} NCD mortality (30-70 years) records")
+        if not df.empty:
+            print(f"Years: {df['Year'].min():.0f} - {df['Year'].max():.0f}")
+            print(f"Countries: {df['Country'].nunique()}")
+            print(f"Sex categories: {df['Sex'].unique()}")
+        
+        return df
+
     def get_poisoning_rates(self, years: Optional[List[int]] = None) -> pd.DataFrame:
         """
         Retrieve unintentional poisoning mortality rates by gender.
@@ -622,9 +699,10 @@ class WHOGHOClient:
         """
         print("Fetching road traffic crash death rate data from WHO GHO API...")
         
-        # SA_0000001459 is the indicator code for age-standardized road traffic crash deaths (15+)
+        # SA_0000001459 is the indicator code for age-standardized road traffic crash deaths
+        # Note: We filter to AGEGROUP_YEARSALL (all ages) to match HALE which is calculated from birth
         indicator_code = "SA_0000001459"
-        indicator_name = "Road traffic crash deaths, age-standardized death rates (15+), per 100,000 population"
+        indicator_name = "Road traffic crash deaths, age-standardized death rates (all ages), per 100,000 population"
         
         print(f"Fetching indicator: {indicator_code} ({indicator_name})")
         # Use OData filter to get only specified years at API level
@@ -639,6 +717,12 @@ class WHOGHOClient:
         
         for item in data['value']:
             try:
+                # Filter to only all ages (AGEGROUP_YEARSALL) to match HALE which is calculated from birth
+                # Exclude AGEGROUP_YEARS15PLUS which only includes ages 15+
+                age_group = item.get('Dim2', '')
+                if age_group != 'AGEGROUP_YEARSALL':
+                    continue
+                
                 record = {
                     'IndicatorCode': indicator_code,
                     'IndicatorName': indicator_name,
@@ -1128,9 +1212,9 @@ def main():
     )
     parser.add_argument(
         "--data",
-        choices=["hale", "cardio", "smoking", "suicide", "alcohol", "poisoning", "roadtraffic", "maternal", "homicide", "ipv", "u5mr", "diabetes", "both", "all"],
+        choices=["hale", "cardio", "smoking", "suicide", "alcohol", "poisoning", "roadtraffic", "maternal", "homicide", "ipv", "u5mr", "diabetes", "ncdmort", "both", "all"],
         default="both",
-        help="Which data to download: hale (HALE only), cardio (cardiovascular only), smoking (smoking/tobacco only), suicide (suicide rates only), alcohol (alcohol-attributable death rates only), poisoning (unintentional poisoning rates only), roadtraffic (road traffic death rates only), maternal (maternal mortality ratio only), homicide (homicide rates only), ipv (intimate partner violence prevalence only), u5mr (under-five mortality rate only), diabetes (diabetes death rates only), both (HALE and cardio), all (includes examples and analysis)"
+        help="Which data to download: hale (HALE only), cardio (cardiovascular only), smoking (smoking/tobacco only), suicide (suicide rates only), alcohol (alcohol-attributable death rates only), poisoning (unintentional poisoning rates only), roadtraffic (road traffic death rates only), maternal (maternal mortality ratio only), homicide (homicide rates only), ipv (intimate partner violence prevalence only), u5mr (under-five mortality rate only), diabetes (diabetes death rates only), ncdmort (NCD mortality 30-70 only), both (HALE and cardio), all (includes examples and analysis)"
     )
     parser.add_argument(
         "--years",
@@ -1209,6 +1293,12 @@ def main():
         type=str,
         default=None,
         help="Filename for diabetes death rate data CSV (default: who_diabetes_death_rates.csv)"
+    )
+    parser.add_argument(
+        "--ncdmort-filename",
+        type=str,
+        default=None,
+        help="Filename for NCD mortality (30-70 years) data CSV (default: who_ncd_mortality_30_70.csv)"
     )
     parser.add_argument(
         "--u5mr-filename",
@@ -1317,6 +1407,7 @@ def main():
     download_ipv = args.data in ["ipv", "all"]
     download_u5mr = args.data in ["u5mr", "all"]
     download_diabetes = args.data in ["diabetes", "all"]
+    download_ncdmort = args.data in ["ncdmort", "all"]
     show_examples = args.data == "all"
     
     hale_df = pd.DataFrame()
@@ -1331,6 +1422,7 @@ def main():
     ipv_df = pd.DataFrame()
     u5mr_df = pd.DataFrame()
     diabetes_df = pd.DataFrame()
+    ncdmort_df = pd.DataFrame()
     
     # Download HALE data if requested
     if download_hale:
@@ -1919,6 +2011,61 @@ def main():
                             print(bottom_10.to_string(index=False))
         else:
             print("No diabetes death rate data found.")
+    
+    # Download NCD mortality (30-70 years) data if requested
+    if download_ncdmort:
+        print("\n" + "="*60)
+        print("=== NCD MORTALITY (30-70 YEARS) BY GENDER ===")
+        print("="*60)
+        
+        # Get NCD mortality (30-70 years) data
+        ncdmort_df = client.get_ncd_mortality_30_70(years=years)
+        
+        if not ncdmort_df.empty:
+            print(f"\nTotal NCD mortality (30-70 years) records: {len(ncdmort_df)}")
+            print(f"Countries: {ncdmort_df['Country'].nunique()}")
+            print(f"Years covered: {ncdmort_df['Year'].min():.0f} - {ncdmort_df['Year'].max():.0f}")
+            print(f"Sex categories: {ncdmort_df['Sex'].unique()}")
+            print(f"Indicator: {ncdmort_df['IndicatorCode'].unique()[0]}")
+            
+            if args.verbose:
+                print("\nSample NCD mortality (30-70 years) data:")
+                print(ncdmort_df.head(10))
+            
+            # Save NCD mortality data to CSV
+            ncdmort_filename = args.ncdmort_filename or 'who_ncd_mortality_30_70.csv'
+            ncdmort_path = os.path.join(args.output_dir, ncdmort_filename)
+            ncdmort_df.to_csv(ncdmort_path, index=False)
+            print(f"\n=== NCD mortality (30-70 years) data saved to {ncdmort_path} ===")
+            
+            if show_examples:
+                # Analyze by gender
+                print("\n=== NCD Mortality (30-70 years) Statistics by Gender ===")
+                gender_stats = ncdmort_df.groupby('Sex')['NCDMortality30_70'].agg(['count', 'mean', 'std']).round(2)
+                print(gender_stats)
+                
+                # Compare male vs female mortality probabilities
+                latest_year = ncdmort_df['Year'].max()
+                latest_ncdmort = ncdmort_df[ncdmort_df['Year'] == latest_year]
+                
+                if not latest_ncdmort.empty:
+                    print(f"\n=== Gender Comparison for {latest_year:.0f} ===")
+                    gender_comparison = latest_ncdmort.groupby('Sex')['NCDMortality30_70'].agg(['mean', 'std']).round(2)
+                    print(gender_comparison)
+                    
+                    # Countries with highest/lowest mortality probabilities by gender
+                    for sex in ['Male', 'Female']:
+                        sex_data = latest_ncdmort[latest_ncdmort['Sex'] == sex]
+                        if not sex_data.empty:
+                            print(f"\nTop 10 countries with highest NCD mortality (30-70 years) ({sex}) in {latest_year:.0f}:")
+                            top_10 = sex_data.nlargest(10, 'NCDMortality30_70')[['Country', 'NCDMortality30_70']]
+                            print(top_10.to_string(index=False))
+                            
+                            print(f"\nBottom 10 countries with lowest NCD mortality (30-70 years) ({sex}) in {latest_year:.0f}:")
+                            bottom_10 = sex_data.nsmallest(10, 'NCDMortality30_70')[['Country', 'NCDMortality30_70']]
+                            print(bottom_10.to_string(index=False))
+        else:
+            print("No NCD mortality (30-70 years) data found.")
     
     # Download under-five mortality rate data if requested
     if download_u5mr:
