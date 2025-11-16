@@ -130,6 +130,89 @@ Multiple unintentional poisoning-related indicators have been identified from WH
 
 **Recommendation**: Use `SDGPOISON` as the primary unintentional poisoning mortality rate predictor - it has excellent temporal coverage (2000-2021), excellent country coverage (196 countries), gender breakdowns, and includes confidence intervals. While it's not explicitly age-standardized, the comprehensive temporal and country coverage make it more valuable for analysis than the age-standardized indicators with only 2 years of data. Unintentional poisoning is relevant to the gender gap as men often have higher rates of accidental deaths.
 
+## IHME Global Burden of Disease Data
+
+Data downloaded from IHME Global Burden of Disease (GBD) Compare tool: https://vizhub.healthdata.org/gbd-compare/
+
+**Note**: IHME data provides separate male and female files, allowing for gender gap analysis. Data is downloaded for OECD countries only. All indicators use "All ages" to match HALE methodology (calculated from birth).
+
+### Drug Use Disorders Death Rates (Downloaded)
+
+**Indicator**: B.7.2 Drug Use Disorders  
+**Measure**: Deaths  
+**Metric**: Rate (per 100,000 population)  
+**Locations**: OECD countries  
+**Age**: All ages  
+**Sex**: Separate files for Male and Female
+
+**GBD Compare Tool Settings**:
+- Display: Cause
+- Cause: B.7.2 Drug Use Disorders
+- Measure: Deaths
+- Locations: OECD
+- Age: All
+- Sex: Both (downloaded separately as Male and Female)
+- Metric: Rate
+
+**Files**:
+- `data/ihme_drug_disorder_deaths_male.csv`
+- `data/ihme_drug_disorder_deaths_female.csv`
+
+**Status**: ✅ Downloaded and integrated into model  
+**Relevance**: Drug overdoses, particularly opioid overdoses, are a major cause of death in some OECD countries (especially the US) and may contribute significantly to the HALE gender gap. This indicator captures overdose deaths that may not be fully captured in the WHO poisoning indicator.  
+**Note**: Data includes separate male and female values, allowing for gender gap analysis. Country names in IHME data use "Republic of Korea" and "United States of America" which are mapped to "South Korea" and "United States" respectively for compatibility with WHO country name mappings.
+
+### Diabetes Type 2 Death Rates (Downloaded)
+
+**Indicator**: B.8.1.2 Diabetes mellitus type 2  
+**Measure**: Deaths  
+**Metric**: Rate (per 100,000 population)  
+**Locations**: OECD countries  
+**Age**: All ages  
+**Sex**: Separate files for Male and Female
+
+**GBD Compare Tool Settings**:
+- Display: Cause
+- Cause: B.8.1.2 Diabetes mellitus type 2
+- Measure: Deaths
+- Locations: OECD
+- Age: All
+- Sex: Both (downloaded separately as Male and Female)
+- Metric: Rate
+
+**Files**:
+- `data/ihme_diabetes_deaths_male.csv`
+- `data/ihme_diabetes_deaths_female.csv`
+
+**Status**: ⚠️ Downloaded but not yet integrated into model  
+**Note**: This is an alternative to the WHO diabetes death rate indicator (SA_0000001440) which only has data for 2004. IHME data may have better temporal coverage. Country names in IHME data use "Republic of Korea" and "United States of America" which are mapped to "South Korea" and "United States" respectively for compatibility with WHO country name mappings.
+
+### Cardiovascular Diseases Death Rates (Downloaded)
+
+**Indicator**: B.2 Cardiovascular diseases  
+**Measure**: Deaths  
+**Metric**: Rate (per 100,000 population)  
+**Locations**: OECD countries  
+**Age**: All ages  
+**Sex**: Separate files for Male and Female
+
+**GBD Compare Tool Settings**:
+- Display: Cause
+- Cause: B.2 Cardiovascular diseases
+- Measure: Deaths
+- Locations: OECD
+- Age: All
+- Sex: Both (downloaded separately as Male and Female)
+- Metric: Rate
+
+**Files**:
+- `data/ihme_cardiovascular_deaths_male.csv`
+- `data/ihme_cardiovascular_deaths_female.csv`
+
+**Status**: ⚠️ Downloaded but not yet integrated into model  
+**Relevance**: Cardiovascular diseases are a major cause of death and may contribute significantly to the HALE gender gap. This is an alternative to the WHO cardiovascular disease death rate indicators which only have data for 2004. IHME data may have better temporal coverage, allowing for more recent data to be used in the analysis.  
+**Note**: Data includes separate male and female values, allowing for gender gap analysis. Country names in IHME data use "Republic of Korea" and "United States of America" which are mapped to "South Korea" and "United States" respectively for compatibility with WHO country name mappings.
+
 ### Road Traffic Crash Death Rate Indicators (Identified)
 
 Multiple road traffic-related death rate indicators have been identified from WHO GHO API:

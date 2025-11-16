@@ -403,7 +403,7 @@ For each predictor, load data and use `summarize_gap()` to get most recent year 
 11. **NCD Mortality (30-70 years)** - `data/who_ncd_mortality_30_70.csv`
     - Column: `NCDMortality30_70`
     - Results: `NCDMortality30_70_Male`, `NCDMortality30_70_Female` (%)
-    - Note: Combined indicator (cardiovascular, cancer, diabetes, chronic respiratory)
+    - Note: NCD = Non-Communicable Disease. Combined indicator (cardiovascular, cancer, diabetes, chronic respiratory)
 
 **Note on excluded indicators:**
 - **Intimate Partner Violence (IPV) prevalence** - Excluded from the model because: (1) data is missing for some OECD countries, and (2) it is likely not a strong direct indicator of HALE gender gap (it affects morbidity/quality of life more than mortality, and the relationship to HALE gap is indirect and complex).
@@ -568,3 +568,66 @@ def counterfactual_impact(model, country_data, predictor_name, new_male_value=No
 ## Notes
 <!-- Add any additional notes, ideas, or observations -->
 
+## Results
+
+### Model 1: Elastic Net Regression (OECD Countries, Pre-COVID Data)
+
+**Model Summary:**
+
+This first iteration of the HALE gender gap model uses Elastic Net regression with cross-validation on OECD countries using pre-COVID data (2000-2019). The model includes 10 health indicators with separate male and female values as predictors (20 predictors total, plus 1 female-only indicator for maternal mortality).
+
+**Data:**
+- **Countries**: OECD countries with complete data (complete-case analysis)
+- **Time Period**: Most recent available year per country/indicator (2000-2019, excluding 2020+ to avoid COVID-19 distortions)
+- **Target Variable**: HALE gap = Female HALE - Male HALE (in years)
+- **Predictors**: Age-standardized mortality/health indicators with male and female values separately:
+  - Smoking prevalence
+  - Cardiovascular disease death rates
+  - Suicide rates
+  - Alcohol-attributable death rates
+  - Poisoning rates
+  - Road traffic death rates
+  - Homicide rates
+  - Maternal mortality ratio (female-only)
+  - Under-five mortality rate
+  - Diabetes death rates
+  - NCD mortality (30-70 years)
+
+**Model Performance:**
+- Model selected via 5-fold cross-validation with GridSearchCV
+- Elastic Net chosen as primary model (combines Ridge and Lasso regularization)
+- Cross-validation R² and RMSE calculated for model comparison
+
+**Feature Importance (Permutation Importance):**
+
+Permutation importance measures the mean decrease in R² when each feature is randomly permuted. Higher values indicate more important features. Results aggregated by indicator (sum of male and female importance):
+
+| Indicator | Male Perm Importance | Female Perm Importance | Total Perm Importance |
+|-----------|---------------------|----------------------|---------------------|
+| AlcoholDeathRate | 1.665 | 0.774 | 2.439 |
+| HomicideRate | 0.624 | 0.148 | 0.773 |
+| NCDMortality30_70 | 0.491 | 0.117 | 0.607 |
+| SmokingPrevalence | 0.187 | 0.213 | 0.401 |
+| SuicideRate | 0.242 | 0.089 | 0.331 |
+| U5MR | -0.000 | 0.034 | 0.034 |
+| RoadTrafficDeathRate | 0.022 | 0.000 | 0.022 |
+| DiabetesDeathRate | 0.005 | 0.001 | 0.005 |
+| PoisoningRate | 0.001 | 0.000 | 0.001 |
+| MaternalMortalityRatio | NaN | 0.000 | 0.000 |
+
+**Key Findings:**
+- **Alcohol-attributable deaths** is by far the most important predictor (Total: 2.439), with male alcohol deaths being the single most important feature (1.665)
+- **Homicide rates** are the second most important (Total: 0.773), with male homicide rates contributing most (0.624)
+- **NCD mortality (30-70 years)** ranks third (Total: 0.607), again with male rates being more important
+- **Smoking prevalence** shows more balanced gender importance (Male: 0.187, Female: 0.213), suggesting both male and female smoking rates matter
+- Most indicators show higher male importance, consistent with the HALE gap being driven primarily by excess male mortality
+- Several indicators (RoadTrafficDeathRate, DiabetesDeathRate, PoisoningRate, MaternalMortalityRatio) show very low or zero importance, suggesting they contribute little to explaining HALE gap variation in OECD countries
+
+**Comments**
+- It's not surprising that maternal mortality has low importance -- it is quite low in all OECD countries
+- Road traffic is very different for males and females, but maybe small enough to have little net effect
+- Under 5 mortality is different for males and females, but very low rates in OECD countries. Including this primarily to rule it out because people ask.
+- Smoking and NCD are complicated in terms of causation -- for a next iteration it would be better to get death rates from conditions caused by smoking
+- It's surprising that poisoning has so little effect, as I thought it would include overdose deaths. We might need to replace this with an indicator that we are confident captures overdoses (e.g., drug overdose deaths, opioid-related deaths). Need to check if WHO has separate overdose indicators or if OWID/other sources are needed.
+- Diabetes death rates show very low importance (0.005), which may be because it's already captured by NCD mortality (30-70), which shows much higher importance (0.607)
+- Alcohol-attributable deaths are by far the most important predictor (2.439), which aligns with known patterns of alcohol-related mortality and suggests alcohol is a primary driver of the HALE gap in OECD countries
