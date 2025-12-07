@@ -121,6 +121,65 @@ class WHOGHOClient:
         print(f"Retrieved {len(df)} records")
         return df
     
+    def get_life_expectancy_data(self, years: Optional[List[int]] = None) -> pd.DataFrame:
+        """
+        Retrieve Life Expectancy at birth data for all countries by sex.
+        
+        Args:
+            years: List of specific years to retrieve. If None, gets all available years.
+            
+        Returns:
+            Pandas DataFrame with Life Expectancy data
+        """
+        print("Fetching Life Expectancy data from WHO GHO API...")
+        
+        # WHOSIS_000001 is the indicator code for Life Expectancy at birth
+        # Use OData filter to get only specified years at API level
+        data = self.get_indicator_data("WHOSIS_000001", years=years)
+        
+        if not data or 'value' not in data:
+            print("No data retrieved from API")
+            return pd.DataFrame()
+        
+        records = []
+        
+        for item in data['value']:
+            try:
+                record = {
+                    'Country': item.get('SpatialDim', ''),
+                    'CountryCode': item.get('SpatialDimType', ''),
+                    'Year': item.get('TimeDim', ''),
+                    'Sex': self._parse_sex_dimension(item.get('Dim1', '')),
+                    'LifeExpectancy_Years': item.get('NumericValue', None),
+                    'LifeExpectancy_Low': item.get('Low', None),
+                    'LifeExpectancy_High': item.get('High', None),
+                    'Comments': item.get('Comments', ''),
+                    'DataSource': item.get('DataSourceDim', ''),
+                }
+                
+                # If years were specified, API already filtered, but double-check
+                if years is None or int(record['Year']) in years:
+                    records.append(record)
+                    
+            except (ValueError, TypeError) as e:
+                print(f"Error processing record: {e}")
+                continue
+        
+        df = pd.DataFrame(records)
+        
+        # Clean and format the data
+        if not df.empty:
+            df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
+            df['LifeExpectancy_Years'] = pd.to_numeric(df['LifeExpectancy_Years'], errors='coerce')
+            df['LifeExpectancy_Low'] = pd.to_numeric(df['LifeExpectancy_Low'], errors='coerce')
+            df['LifeExpectancy_High'] = pd.to_numeric(df['LifeExpectancy_High'], errors='coerce')
+            
+            # Sort by country, sex, and year
+            df = df.sort_values(['Country', 'Sex', 'Year']).reset_index(drop=True)
+        
+        print(f"Retrieved {len(df)} records")
+        return df
+    
     def _parse_sex_dimension(self, dim_value: str) -> str:
         """Parse the sex dimension value into readable format."""
         # Handle both formats: SEX_MLE and MLE
@@ -1212,9 +1271,9 @@ def main():
     )
     parser.add_argument(
         "--data",
-        choices=["hale", "cardio", "smoking", "suicide", "alcohol", "poisoning", "roadtraffic", "maternal", "homicide", "ipv", "u5mr", "diabetes", "ncdmort", "both", "all"],
+        choices=["hale", "le", "cardio", "smoking", "suicide", "alcohol", "poisoning", "roadtraffic", "maternal", "homicide", "ipv", "u5mr", "diabetes", "ncdmort", "both", "all"],
         default="both",
-        help="Which data to download: hale (HALE only), cardio (cardiovascular only), smoking (smoking/tobacco only), suicide (suicide rates only), alcohol (alcohol-attributable death rates only), poisoning (unintentional poisoning rates only), roadtraffic (road traffic death rates only), maternal (maternal mortality ratio only), homicide (homicide rates only), ipv (intimate partner violence prevalence only), u5mr (under-five mortality rate only), diabetes (diabetes death rates only), ncdmort (NCD mortality 30-70 only), both (HALE and cardio), all (includes examples and analysis)"
+        help="Which data to download: hale (HALE only), le (Life Expectancy only), cardio (cardiovascular only), smoking (smoking/tobacco only), suicide (suicide rates only), alcohol (alcohol-attributable death rates only), poisoning (unintentional poisoning rates only), roadtraffic (road traffic death rates only), maternal (maternal mortality ratio only), homicide (homicide rates only), ipv (intimate partner violence prevalence only), u5mr (under-five mortality rate only), diabetes (diabetes death rates only), ncdmort (NCD mortality 30-70 only), both (HALE and cardio), all (includes examples and analysis)"
     )
     parser.add_argument(
         "--years",
@@ -1233,6 +1292,12 @@ def main():
         type=str,
         default=None,
         help="Filename for HALE data CSV (default: who_hale_data.csv)"
+    )
+    parser.add_argument(
+        "--le-filename",
+        type=str,
+        default=None,
+        help="Filename for Life Expectancy data CSV (default: who_life_expectancy_data.csv)"
     )
     parser.add_argument(
         "--cardio-filename",
@@ -1396,6 +1461,7 @@ def main():
     
     # Determine which data to download
     download_hale = args.data in ["hale", "both", "all"]
+    download_le = args.data in ["le", "all"]
     download_cardio = args.data in ["cardio", "both", "all"]
     download_smoking = args.data in ["smoking", "all"]
     download_suicide = args.data in ["suicide", "all"]
@@ -1411,6 +1477,7 @@ def main():
     show_examples = args.data == "all"
     
     hale_df = pd.DataFrame()
+    le_df = pd.DataFrame()
     cardio_df = pd.DataFrame()
     smoking_df = pd.DataFrame()
     suicide_df = pd.DataFrame()
@@ -1474,6 +1541,57 @@ def main():
                     print(bottom_10.to_string(index=False))
         else:
             print("No HALE data retrieved.")
+    
+    # Download Life Expectancy data if requested
+    if download_le:
+        if args.verbose:
+            print("\n=== Searching for Life Expectancy indicators ===")
+            le_indicators = client.search_indicators("life expectancy")
+            if not le_indicators.empty:
+                print("Found Life Expectancy indicators:")
+                print(le_indicators[['IndicatorCode', 'IndicatorName']].to_string(index=False))
+                print()
+        
+        print("\n=== Downloading Life Expectancy data ===")
+        le_df = client.get_life_expectancy_data(years=years)
+        
+        if not le_df.empty:
+            print(f"Total records: {len(le_df)}")
+            print(f"Countries: {le_df['Country'].nunique()}")
+            print(f"Years covered: {le_df['Year'].min():.0f} - {le_df['Year'].max():.0f}")
+            print(f"Sex categories: {le_df['Sex'].unique()}")
+            
+            if args.verbose:
+                print("\nSample data:")
+                print(le_df.head(10))
+            
+            # Save Life Expectancy data to CSV
+            le_filename = args.le_filename or 'who_life_expectancy_data.csv'
+            le_path = os.path.join(args.output_dir, le_filename)
+            le_df.to_csv(le_path, index=False)
+            print(f"\n=== Life Expectancy data saved to {le_path} ===")
+            
+            if show_examples:
+                # Example: Analyze data by sex
+                print("\n=== Life Expectancy statistics by sex ===")
+                sex_stats = le_df.groupby('Sex')['LifeExpectancy_Years'].agg(['count', 'mean', 'std']).round(2)
+                print(sex_stats)
+                
+                # Example: Get countries with highest/lowest Life Expectancy (most recent data)
+                print("\n=== Countries with highest/lowest Life Expectancy (most recent year) ===")
+                latest_year = le_df['Year'].max()
+                latest_data = le_df[(le_df['Year'] == latest_year) & (le_df['Sex'] == 'Both sexes')]
+                
+                if not latest_data.empty:
+                    print(f"\nTop 10 countries with highest Life Expectancy in {latest_year:.0f}:")
+                    top_10 = latest_data.nlargest(10, 'LifeExpectancy_Years')[['Country', 'LifeExpectancy_Years']]
+                    print(top_10.to_string(index=False))
+                    
+                    print(f"\nBottom 10 countries with lowest Life Expectancy in {latest_year:.0f}:")
+                    bottom_10 = latest_data.nsmallest(10, 'LifeExpectancy_Years')[['Country', 'LifeExpectancy_Years']]
+                    print(bottom_10.to_string(index=False))
+        else:
+            print("No Life Expectancy data retrieved.")
     
     # Download cardiovascular data if requested
     if download_cardio:

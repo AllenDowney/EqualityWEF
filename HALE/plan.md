@@ -112,12 +112,20 @@ Documentation of the API: https://www.who.int/data/gho/info/gho-odata-api
 
 **Key Features:**
 
-1. **HALE Data Retrieval** (`get_hale_data`):
+1. **HALE Data Retrieval** (`get_hale_data`): ✅ **Implemented**
    - Retrieves Healthy Life Expectancy (HALE) data by sex (Male, Female, Both sexes)
    - Uses indicator code `WHOSIS_000002` for HALE at birth
    - Returns data with columns: Country, CountryCode, Year, Sex, HALE_Years, HALE_Low, HALE_High
    - Supports filtering by specific years
-   - This is the **target variable** for our analysis (gender gap = Female HALE - Male HALE)
+   - This is the **primary target variable** for our analysis (gender gap = Female HALE - Male HALE)
+
+2. **Life Expectancy Data Retrieval** (`get_life_expectancy_data`): ✅ **Implemented**
+   - Retrieves Life Expectancy at birth data by sex (Male, Female, Both sexes)
+   - Uses indicator code `WHOSIS_000001` for Life Expectancy at birth
+   - Returns data with columns: Country, CountryCode, Year, Sex, LifeExpectancy_Years, LifeExpectancy_Low, LifeExpectancy_High
+   - Supports filtering by specific years
+   - This is the **secondary target variable** for our analysis (gender gap = Female LE - Male LE)
+   - Data coverage: 12,936 records, 196 countries, 2000-2021 (matches HALE coverage)
 
 2. **Cardiovascular Disease Death Rates** (`get_cardiovascular_death_rates`):
    - Retrieves age-standardized cardiovascular disease death rates by gender
@@ -138,16 +146,19 @@ Documentation of the API: https://www.who.int/data/gho/info/gho-odata-api
 ```python
 client = WHOGHOClient()
 hale_df = client.get_hale_data(years=[2015, 2020, 2023])
+le_df = client.get_life_expectancy_data(years=[2015, 2020, 2023])
 cardio_df = client.get_cardiovascular_death_rates()
 ```
 
 **Data Output:**
-- Saves HALE data to `who_hale_data.csv`
+- Saves HALE data to `who_hale_data.csv` ✅
+- Saves Life Expectancy data to `who_life_expectancy_data.csv` ✅
 - Saves cardiovascular death rates to `who_cardiovascular_death_rates.csv`
 - Includes both full datasets and recent-year filtered versions
 
 **Relevance to Project:**
-- Provides the **target variable** (HALE by sex) needed to calculate gender gaps
+- Provides the **primary target variable** (HALE by sex) needed to calculate gender gaps ✅
+- Provides the **secondary target variable** (Life Expectancy by sex) for comparative analysis ✅
 - Provides **cardiovascular disease death rates** as a predictor variable
 - Can be extended to retrieve other relevant indicators (smoking, suicide rates, maternal mortality, etc.)
 
@@ -334,10 +345,15 @@ The following recommendations are organized by priority and relevance:
 
 ## Analysis Steps
 
+**Notebook Organization:**
+- **`eda.md`**: Contains Phase 1 (Data Preparation) and Phase 2 (Exploratory Data Analysis). This notebook loads all data, prepares predictors and both target variables (HALE gap and Life Expectancy gap), performs exploratory analysis, creates summary tables with correlations, and saves the final dataset to HDF5 for use in modeling. Summary tables are written to HTML files in `jb/tables/` for inclusion in the JupyterBook site.
+- **`model2.md`**: Contains Phase 3 (Model Fitting), Phase 4 (Model Interpretation), and subsequent phases for **Life Expectancy gap analysis**. This notebook loads the saved data from `eda.md` and performs all modeling and analysis using `LifeExpectancy_gap` as the target variable. Uses Mid + Gap format for predictors (not separate Male/Female columns).
+- **`life_expectancy_model.md`**: Copy of `model2.md` adapted for HALE gap analysis. Uses `HALE_gap` as the target variable instead of `LifeExpectancy_gap`. (Note: Currently `model2.md` analyzes Life Expectancy gap, so this would be the HALE gap version.)
+
 ### Phase 1: Data Preparation (OECD Countries, Most Recent Data)
 
 **Step 1.1: Load and Prepare Data Using Existing Functions**
-- Use existing functions from `hale.md`:
+- Use existing functions from `eda.md`:
   - `load_and_inventory(filename)` - Loads WHO CSV files, filters to year 2000-2019 (excludes 2020+ to avoid COVID-19 pandemic distortions) and country-level data (CountryCode == "COUNTRY")
   - `compute_gender_gap(df, value_col, sexes)` - Computes separate columns for each sex and gap column
   - `summarize_gap(df, col, sexes=None)` - Computes gender gaps and selects most recent year per country
@@ -345,19 +361,34 @@ The following recommendations are organized by priority and relevance:
 
 **Note on data years**: We exclude 2020 and later years to avoid COVID-19 pandemic distortions. The pandemic had significant impacts on mortality patterns that may not reflect underlying health factors. Using 2019 or earlier data provides a more stable baseline for understanding the HALE gender gap.
 
-**Step 1.2: Download and Prepare Target Variable (HALE Gender Gap)**
-- Load HALE data: `data/who_hale_data.csv`
-- Use `load_and_inventory()` to load and filter data
-- Map sex codes: `{'SEX_BTSX': 'Both', 'SEX_FMLE': 'Female', 'SEX_MLE': 'Male'}`
-- Use `summarize_gap(hale, 'HALE_Years', sexes=['Male', 'Female'])` to:
-  - Compute separate columns: `HALE_Years_Male` and `HALE_Years_Female`
-  - Select most recent year available for each country
-  - Returns `hale_recent` DataFrame indexed by Country with male/female columns
-- Calculate target variable: `HALE_gap = HALE_Years_Female - HALE_Years_Male` (in years)
-- Filter to OECD countries using `get_oecd(hale_recent)`
+**Step 1.2: Download and Prepare Target Variables (HALE and Life Expectancy Gender Gaps)** ✅ **COMPLETE**
+- **HALE data:** ✅ **Downloaded and implemented**
+  - Load HALE data: `data/who_hale_data.csv`
+  - Use `load_and_inventory()` to load and filter data
+  - Map sex codes: `{'SEX_BTSX': 'Both', 'SEX_FMLE': 'Female', 'SEX_MLE': 'Male'}`
+  - Use `summarize_gap(hale, 'HALE_Years', sexes=['Male', 'Female'])` to:
+    - Compute separate columns: `HALE_Years_Male` and `HALE_Years_Female`
+    - Select most recent year available for each country
+    - Returns `hale_recent` DataFrame indexed by Country with male/female columns
+  - Calculate target variable: `HALE_gap = HALE_Years_Female - HALE_Years_Male` (in years)
+  - Filter to OECD countries using `get_oecd(hale_recent)`
+- **Life Expectancy data:** ✅ **Downloaded and implemented**
+  - ✅ **Data downloaded**: Life Expectancy data downloaded from WHO GHO API using indicator code `WHOSIS_000001`
+  - ✅ **File created**: `data/who_life_expectancy_data.csv` (12,936 records, 196 countries, 2000-2021)
+  - ✅ **Method added**: `get_life_expectancy_data()` method added to `who_data.py` with CLI support
+  - Load life expectancy data: `data/who_life_expectancy_data.csv`
+  - Use `load_and_inventory()` to load and filter data (same methodology as HALE)
+  - Use `summarize_gap(le, 'LifeExpectancy_Years', sexes=['Male', 'Female'])` to:
+    - Compute separate columns: `LifeExpectancy_Years_Male` and `LifeExpectancy_Years_Female`
+    - Select most recent year available for each country
+    - Returns `le_recent` DataFrame indexed by Country with male/female columns
+  - Calculate target variable: `LifeExpectancy_gap = LifeExpectancy_Years_Female - LifeExpectancy_Years_Male` (in years)
+  - Filter to OECD countries using `get_oecd(le_recent)`
+  - ✅ **EDA updated**: Life Expectancy data loading and exploration added to `eda.md`
+  - ✅ **HDF5 updated**: Both `target_hale` and `target_le` saved to HDF5 file for modeling
 
-**Step 1.3: Download and Prepare Predictor Variables**
-For each predictor, load data and use `summarize_gap()` to get most recent year per country. **Use separate male and female values as predictors** (not gaps), except for female-only indicators (maternal mortality):
+**Step 1.3: Download and Prepare Predictor Variables** ✅ **COMPLETE**
+For each predictor, load data and use `summarize_gap()` to get most recent year per country. **Use Mid (midpoint) and Gap columns as predictors** (not separate Male/Female columns), except for female-only indicators (maternal mortality):
 
 1. **Smoking prevalence** - `data/who_smoking_data.csv`
    - Column: `SmokingPrevalence`
@@ -408,26 +439,39 @@ For each predictor, load data and use `summarize_gap()` to get most recent year 
 **Note on excluded indicators:**
 - **Intimate Partner Violence (IPV) prevalence** - Excluded from the model because: (1) data is missing for some OECD countries, and (2) it is likely not a strong direct indicator of HALE gender gap (it affects morbidity/quality of life more than mortality, and the relationship to HALE gap is indirect and complex).
 
-- For each indicator:
+- **Smoking prevalence** - Excluded from the model because it is a long-lag cause of some of the immediate causes of death included in the analysis (e.g., cardiovascular disease, chronic respiratory disease). Including both smoking and its downstream effects would create redundancy and make it difficult to interpret which factors are most directly associated with the HALE gender gap.
+
+- **NCD Mortality (30-70 years)** - Excluded from the model because it is a catch-all combined indicator (cardiovascular disease, cancer, diabetes, chronic respiratory disease) that is not something we can target with specific policies. The model uses the individual cause-specific indicators instead, which are more actionable and interpretable.
+
+- **WHO Cardiovascular Disease** - Excluded from the model because it has been replaced with the IHME version (`cardiovascular_ihme_recent`), which has better temporal coverage (2000-2021 vs. only 2004 data for WHO).
+
+- **WHO Diabetes** - Excluded from the model because it has been replaced with the IHME version (`diabetes_ihme_recent`), which has better temporal coverage (2000-2021 vs. only 2004 data for WHO).
+
+- ✅ For each indicator:
   - Use `load_and_inventory()` to load and filter data
-  - Use `summarize_gap()` to get most recent year per country
+  - Use `summarize_gap()` to get most recent year per country (creates `Mid_` and `Gap_` columns)
   - Filter to OECD countries using `get_oecd()`
-  - For indicators with both male and female data: extract both `_Male` and `_Female` columns (exclude `_Gap` columns to avoid collinearity)
+  - For indicators with both male and female data: keep both `Mid_` and `Gap_` columns (also keep `_Male` and `_Female` columns for counterfactual analysis)
   - For female-only indicators (maternal mortality): keep the `_Female` column
+  - **Note**: The model uses `Mid_` and `Gap_` columns, while `_Male` and `_Female` columns are kept for counterfactual analysis but not used as predictors
 
-**Step 1.4: Merge All Predictors into Single Dataset**
-- Merge all predictor DataFrames (indexed by Country) into single country-level dataset
-- Use outer merge to keep all countries, document which countries have missing data for which indicators
-- Create missing data report showing coverage for each indicator across OECD countries
-- The merged dataset will have one row per country with columns for each predictor (male and female separately for most indicators, female-only for maternal mortality)
+**Step 1.4: Merge All Predictors into Single Dataset** ✅ **COMPLETE**
+- ✅ Merge all predictor DataFrames (indexed by Country) into single country-level dataset
+- ✅ Use outer merge to keep all countries, document which countries have missing data for which indicators
+- ✅ Create missing data report showing coverage for each indicator across OECD countries
+- ✅ The merged dataset has one row per country with columns for each predictor:
+  - `Mid_{indicator}` and `Gap_{indicator}` columns for most indicators (used in modeling)
+  - `{indicator}_Male` and `{indicator}_Female` columns (kept for counterfactual analysis)
+  - `MaternalMortality_Female` for maternal mortality (female-only)
 
-**Step 1.5: Handle Missing Data and Create Final Dataset**
-- Since missing data is expected to be minimal for OECD countries, use complete-case analysis for primary model
-- Document any countries excluded due to missing critical predictors
-- Create final analysis dataset with:
-  - Target variable: `HALE_gap` (Female - Male, in years)
-  - Predictors: All `_Male` and `_Female` columns from Step 1.3 (plus `MaternalMortalityRatio_Female`)
+**Step 1.5: Handle Missing Data and Create Final Dataset** ✅ **COMPLETE**
+- ✅ Since missing data is expected to be minimal for OECD countries, use complete-case analysis for primary model
+- ✅ Document any countries excluded due to missing critical predictors
+- ✅ Create final analysis dataset with:
+  - **Target variables**: Both `HALE_gap` and `LifeExpectancy_gap` (Female - Male, in years)
+  - Predictors: All `Mid_` and `Gap_` columns (used in modeling), plus `_Male` and `_Female` columns (kept for counterfactual analysis)
   - Index: Country codes (OECD countries only)
+- ✅ Save final dataset to HDF5 file with both target variables for use in modeling notebooks
 
 
 ### Phase 2: Exploratory Data Analysis
@@ -442,6 +486,53 @@ For each predictor, load data and use `summarize_gap()` to get most recent year 
 - Visualize correlations (heatmap)
 - Identify highly correlated predictors (e.g., smoking ↔ cardiovascular disease)
 - This confirms need for Ridge/Lasso regularization
+
+**Step 2.3: Extreme Values and Country Rankings**
+- **For each indicator** (both male and female values):
+  - Create table showing countries with highest and lowest values
+  - Include: Country name, value, and rank
+  - Show top 5 and bottom 5 countries for each indicator
+  - This helps identify which countries drive variation in each predictor
+- **For gender gaps** (computed gaps for each indicator):
+  - Create table showing countries with largest and smallest gaps
+  - Include: Country name, male value, female value, computed gap (Male - Female), and rank
+  - Show top 5 and bottom 5 countries for each indicator gap
+  - This helps identify which countries have the most extreme gender differences
+- **For HALE gap** (target variable):
+  - Create table showing countries with largest and smallest HALE gaps
+  - Include: Country name, Male HALE, Female HALE, HALE gap (Female - Male), and rank
+  - Show all countries ranked by HALE gap
+  - This provides context for understanding the target variable distribution
+
+**Step 2.4: Summary Statistics by Indicator** ✅ **COMPLETE**
+- ✅ Created summary tables with one row per indicator showing:
+  - Median, Min, and Max of midpoint values (rates) across countries
+  - Median, Min, and Max of gender gaps across countries
+  - Separate tables for predictor indicators and target variables (HALE and Life Expectancy)
+  - All values formatted to 3 significant digits
+  - Indicator kept as a column (not index) in all tables
+- ✅ Added correlation columns to predictor tables:
+  - Corr HALE: Correlation between predictor and HALE gap
+  - Corr LE: Correlation between predictor and Life Expectancy gap
+  - Color coding: highest correlation highlighted in green, lowest in pink/red
+- ✅ Created rate-gap correlation table:
+  - Shows correlation between Rate (Mid) and Gap for each indicator
+  - Sorted by correlation magnitude
+  - Formatted to 3 significant digits
+- ✅ Created top 10 correlation tables:
+  - Top 10 correlations (by magnitude) between rates and other rates
+  - Top 10 correlations (by magnitude) between gaps and other gaps
+  - Both tables show indicator pairs and their correlations
+  - Formatted to 3 significant digits
+- ✅ All tables written to HTML files in `jb/tables/` directory:
+  - `predictor_rates.html` - Predictor indicators, rates (with correlation highlighting)
+  - `predictor_gaps.html` - Predictor indicators, gaps (with correlation highlighting)
+  - `target_rates.html` - Target variables (HALE, LE), rates
+  - `target_gaps.html` - Target variables (HALE, LE), gaps
+  - `rate_gap_correlation.html` - Correlation between Rate and Gap for each indicator
+  - `rate_rate_correlation_top10.html` - Top 10 rate-rate correlations
+  - `gap_gap_correlation_top10.html` - Top 10 gap-gap correlations
+- ✅ Tables included in JupyterBook site (`jb/hale_gaps.md`) using MyST `{include}` directive
 
 
 ### Phase 3: Model Fitting
@@ -469,120 +560,269 @@ For each model:
 
 ### Phase 4: Model Interpretation
 
-**Step 4.1: Coefficient Analysis** ✅ **COMPLETE**
-- ✅ Extract coefficients from selected model (on standardized scale) - Done in `hale.md` "Extract Elastic Net Coefficients" section
+**Step 4.1: Coefficient Analysis** ✅ **COMPLETE** (for both Life Expectancy and HALE gaps)
+- ✅ Extract coefficients from selected model (on standardized scale) - Done in `model_le.md` and `model_hale.md` "Extract Elastic Net Coefficients" section
 - ✅ Calculate feature importance: `importance = |coefficient| × std(predictor)` - Done in "Calculate Feature Importance" section
-- ✅ Rank predictors by importance to identify largest contributors to HALE gap variation - Done, sorted by importance
-- ✅ Calculate indicator-level importance (aggregating male and female predictors) - Done in "Importance by Indicator" section
-- ✅ Calculate counterfactual predictions (predicted change in HALE gap if male = female for each indicator) - Done in "Summary: Indicator Analysis and Counterfactual Predictions" section
+- ✅ Rank predictors by importance to identify largest contributors to gap variation - Done, sorted by importance
+- ✅ Calculate indicator-level importance (aggregating Mid and Gap predictors) - Done in "Importance by Indicator" section
+- ✅ Counterfactual predictions implemented in Phase 5 (see below)
 
-**Step 4.2: Model Diagnostics** ⚠️ **PARTIAL**
+**Coefficient-Based Importances from ElasticNet**
+
+| Indicator | Male Importance | Female Importance | Total Importance |
+|-----------|----------------|-------------------|-------------------|
+| AlcoholDeathRate | 62.78 | 14.83 | 77.60 |
+| CardioDeathRate | 0.00 | 26.92 | 26.92 |
+| ChronicRespiratoryDeathRate | 9.15 | 13.64 | 22.79 |
+| UnintentionalInjuriesDeathRate | 0.00 | 3.10 | 3.10 |
+| SuicideRate | 2.12 | 0.00 | 2.12 |
+| MaternalMortalityRatio | — | 1.29 | 1.29 |
+| RoadTrafficDeathRate | 0.93 | 0.07 | 1.00 |
+| HomicideRate | 0.51 | 0.00 | 0.51 |
+| DiabetesDeathRate | 0.00 | 0.10 | 0.10 |
+| PoisoningRate | 0.00 | 0.00 | 0.00 |
+| U5MR | 0.00 | 0.00 | 0.00 |
+| DrugDisorderDeathRate | 0.00 | 0.00 | 0.00 |
+
+**Summary of Coefficient-Based Importance Results:**
+
+Ranked by total importance (sum of male and female importance):
+
+1. **Alcohol-attributable deaths** (77.60) — Dominates the model, accounting for more than half of the total importance across all indicators. This is by far the most important predictor, consistent with permutation importance results.
+
+2. **Cardiovascular disease death rates** (26.92) — Second most important indicator. The coefficient-based importance shows cardiovascular disease has a strong linear relationship with HALE gap, even though permutation importance ranked it lower.
+
+3. **Chronic respiratory disease death rates** (22.79) — Third most important, showing that respiratory mortality patterns are a significant contributor to HALE gap variation.
+
+4. **Unintentional injuries** (3.10) — Moderate importance, suggesting unintentional injury patterns contribute to HALE gap variation.
+
+5. **Suicide rates** (2.12) — Low but non-zero importance.
+
+6. **Maternal mortality** (1.29) — Very low importance, as expected given that maternal mortality is already very low in all OECD countries.
+
+7. **Road traffic death rates** (1.00) — Very low importance.
+
+8. **Homicide rates** (0.51) — Very low importance.
+
+9. **Diabetes death rates** (0.10) — Near-zero importance.
+
+10. **Zero importance indicators**: **PoisoningRate**, **U5MR**, and **DrugDisorderDeathRate** all have zero importance, suggesting they contribute little to explaining HALE gap variation in OECD countries.
+
+**Key Findings:**
+- The top three indicators (Alcohol, Cardiovascular, Chronic Respiratory) account for the vast majority of the model's explanatory power.
+- **Alcohol-attributable deaths** is overwhelmingly the most important factor, suggesting that alcohol-related mortality is the primary driver of HALE gender gap variation in OECD countries.
+- The male/female allocation within each indicator should be interpreted cautiously, as it may reflect statistical artifacts (collinearity, regularization) rather than substantive differences in how male vs. female rates contribute to the gap.
+
+**Step 4.2: Model Diagnostics** ✅ **COMPLETE** (for both Life Expectancy and HALE gaps)
 - ✅ Calculate R² (explained variance) - R² calculated via cross-validation in Phase 3 (CV_R2_Score)
-- ❌ Residual analysis (check for patterns, outliers) - Not yet implemented
-- ❌ Check for influential observations (Cook's distance, leverage) - Not yet implemented
+- ✅ Residual analysis (check for patterns, outliers) - Done in `model_le.md` and `model_hale.md`:
+  - Residual vs. predicted values plot
+  - Histogram of residuals
+  - Identification of outliers (residuals > 2 standard deviations)
+  - Residuals by country table
+  - Residuals vs. top predictors plots
+- ⚠️ Check for influential observations (Cook's distance, leverage) - Not yet implemented (not needed for current analysis)
 
-**Step 4.3: Feature Importance Visualization** ✅ **COMPLETE**
-- ✅ Create bar chart showing coefficient magnitudes (standardized) - Done in "Visualize Predictor Importance" section (top 15 predictors)
-- ✅ Highlight top contributors to HALE gap variation - Done in "Top Contributors to HALE Gap" section
+**Step 4.3: Feature Importance Visualization** ✅ **COMPLETE** (for both Life Expectancy and HALE gaps)
+- ✅ Create bar chart showing coefficient magnitudes (standardized) - Done in `model_le.md` and `model_hale.md` "Visualize Predictor Importance" section (all predictors with non-zero coefficients)
+- ✅ Highlight top contributors to gap variation - Done in predictor importance analysis
 - ✅ Create indicator-level importance visualization - Done in "Visualize Indicator Importance" section
-- ⚠️ Compare importance across different models (Ridge vs Lasso vs Elastic Net) - Coefficients extracted for all three models in Phase 3, but importance visualization only done for Elastic Net (selected as primary model)
+- ✅ Compare importance across different models (Ridge vs Lasso vs Elastic Net) - Coefficients extracted for all three models in Phase 3, with comparison tables created
 
-### Phase 5: Counterfactual Analysis
 
-**Note**: Some counterfactual analysis has been completed in Phase 4 (see "Summary: Indicator Analysis and Counterfactual Predictions" section in `hale.md`), which calculates predicted changes in HALE gap if male values equal female values for each indicator. Phase 5 focuses on more systematic country-to-country counterfactual scenarios.
+### Phase 5: Counterfactual Analysis ✅ **COMPLETE** (for both Life Expectancy and HALE gaps)
 
-**Step 5.1: Create Counterfactual Function**
-Develop function to calculate impact of changing predictor values (male, female, or both):
-```python
-def counterfactual_impact(model, country_data, predictor_name, new_male_value=None, new_female_value=None):
-    """
-    Calculate how much HALE gap would change if predictor value(s) changed.
-    
-    Parameters:
-    - model: Fitted regression model
-    - country_data: Dictionary/Series of current predictor values for a country
-    - predictor_name: Base name of predictor to change (e.g., 'SmokingPrevalence', 'MaternalMortalityRatio')
-    - new_male_value: New value for male predictor (standardized), None to keep original
-    - new_female_value: New value for female predictor (standardized), None to keep original
-    
-    Returns:
-    - ΔHALE_gap: Change in predicted HALE gap (in years)
-    """
-    # Create modified data with new predictor value(s)
-    # Predict HALE gap with original and modified data
-    # Return difference
-```
+**Step 5.1: Counterfactual Analysis Implementation** ✅ **COMPLETE**
+- ✅ Counterfactual analysis implemented directly in `model_le.md` and `model_hale.md` (not in separate predict.md notebook)
+- ✅ Uses data loading code from HDF5 file (predictors and target)
+- ✅ Uses Elastic Net model trained in Phase 3
 
-**Step 5.2: Run Counterfactual Scenarios**
-- Select country pairs of interest (e.g., US vs Netherlands, US vs other OECD countries)
-- For each pair, systematically change each predictor from country A to country B's values
-  - Can change male value, female value, or both
-  - Example: Change US male smoking to Netherlands male smoking value
-  - Example: Change both US male and female smoking to Netherlands values
-  - Example: Change US maternal mortality to Netherlands maternal mortality
-- Calculate predicted change in HALE gap for each counterfactual
-- Identify which factors (and which gender) would have largest impact on closing the gap
+**Step 5.2: Gap Predictor Analysis Table** ✅ **COMPLETE**
+- ✅ Created gap extremes table showing for each gap predictor:
+  - Minimum gap value and country with minimum gap
+  - Maximum gap value and country with maximum gap
+- ✅ Implemented in `model_le.md` and `model_hale.md` as `gap_extremes` dictionary
 
-**Step 5.3: Summarize Counterfactual Results**
-- Create table/matrix showing counterfactual impacts
-- Visualize which factors would have largest impact for specific country comparisons
-- Identify most actionable factors (e.g., if reducing overdose rates would have large impact)
+**Step 5.3: Counterfactual Prediction Function** ✅ **COMPLETE**
+- ✅ Created `counterfactual_predictions()` function that:
+  - For each gap predictor, finds the best attainable gap:
+    - If current gap is positive (Male > Female): finds country with minimum gap (smallest positive gap)
+    - If current gap is negative (Female > Male): finds country with maximum gap (largest positive gap)
+  - If the target gap has the opposite sign of the current gap, sets the target to zero
+  - Adjusts Male or Female values to achieve the target gap:
+    - If current gap is positive (Male > Female): bring men toward women's level
+    - If current gap is negative (Female > Male): bring women toward men's level
+  - Recomputes Mid and Gap values from adjusted Male/Female values
+  - Generates counterfactual predictions using the adjusted values
+- ✅ Created `counterfactuals_for_country()` function that generates counterfactual table with columns:
+  - Indicator
+  - Current gap
+  - Target gap
+  - Target Country (or "" if target has been set to zero)
+  - Change in LE/HALE gap (predicted gap change)
+- ✅ Tables sorted by importance (descending) and formatted with spaces in column names
+- ✅ Results exported to HTML tables: `counterfactuals_usa_le.html` and `counterfactuals_usa_hale.html`
+- ✅ Aggregate effects calculated: sum of gap-closing indicators and gap-widening indicators
 
-### Phase 6: Sensitivity Analysis
+### Phase 6: Documentation and Reporting
 
-**Step 6.1: Robustness Checks**
-- Test model with different predictor combinations (e.g., exclude highly correlated predictors)
-- Test sensitivity to outliers (remove influential observations, refit model)
-- Test sensitivity to missing data (impute vs complete-case analysis)
+**Step 6.1: Document Findings** ✅ **COMPLETE**
+- ✅ Summary tables created in `eda.md` showing indicator statistics and correlations
+- ✅ JupyterBook site created (`jb/hale_gaps.md`) with summary tables included
+- ✅ Summarize which factors explain largest portions of gap variation - Done for both Life Expectancy and HALE in `model_le.md` and `model_hale.md`
+- ✅ Document model performance (R², cross-validation scores) - Done for both Life Expectancy and HALE
+- ✅ Report counterfactual insights (which factors would have largest impact) - Complete for both LE and HALE, documented in `hale_gaps.md`
 
-**Step 6.2: Alternative Specifications**
-- Test models with different predictor transformations (e.g., ratios instead of differences)
-- Compare results across Ridge, Lasso, and Elastic Net models
-- Document any substantial differences in conclusions
+**Step 6.2: Prepare for Future Analysis**
+- ✅ Document data limitations and coverage - Done in `eda.md` (missing data reports, year coverage)
+- ✅ Note any countries excluded and reasons - Done in `eda.md` (complete-case analysis)
+- ⚠️ Prepare framework for temporal analysis (Phase 2, future work) - Not yet implemented
+- ⚠️ Prepare framework for larger country set analysis (future work) - Not yet implemented
 
-### Phase 7: Documentation and Reporting
+**Step 6.3: JupyterBook Site** ✅ **COMPLETE**
+- ✅ Created JupyterBook site structure in `jb/` directory:
+  - `myst.yml` - JupyterBook 2 configuration (replaced `_config.yml` and `_toc.yml`)
+  - `hale_gaps.md` - Main document with summary tables
+  - `Makefile` - Commands to build and deploy the site
+- ✅ Summary tables included using MyST `{include}` directive:
+  - Target variables (HALE and Life Expectancy) rates and gaps
+  - Predictor indicators rates and gaps (with correlation highlighting)
+  - Rate-gap correlation table
+  - Top rate-rate and gap-gap correlation tables
+- ✅ Tables formatted with 3 significant digits and color coding for correlations
+- ✅ Vocabulary updated: "midpoint" → "overall rate" (with explanation on first use)
+- ✅ Clarified "median" means "median across countries" on first use
 
-**Step 7.1: Document Findings**
-- Summarize which factors explain largest portions of HALE gap variation
-- Document model performance (R², cross-validation scores)
-- Report counterfactual insights (which factors would have largest impact)
+**Step 6.4: Export Model Results to JupyterBook** ✅ **COMPLETE**
+- ✅ Export Life Expectancy model results from `model_le.md` as HTML tables:
+  - Model performance summary (R², MAE, cross-validation scores) → `model_comparison_le.html`
+  - Feature importance table (predictor-level) → `predictor_importance_le.html`
+  - Indicator-level importance table → `indicator_importance_le.html`
+  - Coefficient comparison table (Elastic Net vs OLS) → `elasticnet_ols_coefficient_comparison_le.html`
+  - Performance comparison table → `performance_comparison_le.html`
+  - Country-level predictions and residuals → `predictions_comparison_le.html`, `residuals_by_country_le.html`
+  - Counterfactual analysis table → `counterfactuals_usa_le.html`
+- ✅ Export HALE model results from `model_hale.md` as HTML tables (same format as Life Expectancy, with `_hale` suffix)
+- ✅ All figures exported to `jb/figs/` directory with appropriate suffixes (`_le` or `_hale`)
+- ✅ Incorporate Life Expectancy results into `hale_gaps.md` - Complete with full sections for model performance, feature importance, diagnostics, and counterfactual analysis
+- ✅ Incorporate HALE results into `hale_gaps.md` - Complete with parallel sections mirroring LE structure
+- ✅ Added comparison section summarizing differences between LE and HALE results
+- ✅ Report follows style guide: level 2 and 3 headings, moderate formatting, Allen Downey writing style
+- ✅ Added contextual explanations for findings (e.g., cardiovascular disease and age, neoplasms and smoking history)
 
-**Step 7.2: Prepare for Future Analysis**
-- Document data limitations and coverage
-- Note any countries excluded and reasons
-- Prepare framework for temporal analysis (Phase 2, future work)
-- Prepare framework for larger country set analysis (future work)
+### Phase 8: Life Expectancy Gender Gap Analysis
+
+**Overview:**
+Perform the same analysis (Phases 3-5, 6) using period life expectancy as the target variable instead of HALE. This allows comparison of which factors explain the gender gap in overall life expectancy versus healthy life expectancy. The life expectancy data is already prepared in Phase 1 (Step 1.2) and saved to the HDF5 data file alongside HALE data. See "Recommendations for Life Expectancy Gender Gap Model" section (lines 242-333) for detailed discussion of predictor selection and model structure.
+
+**Step 8.1: Create Life Expectancy Model Notebook** ✅ **COMPLETE**
+- ✅ **Note**: `model_le.md` (renamed from `model2.md`) performs Life Expectancy gap analysis (uses `target_le` / `LifeExpectancy_gap` as target variable)
+- ✅ Loads the same HDF5 data file created in Phase 1 (which contains both target variables)
+- ✅ Uses the same predictor variables (Mid + Gap format, not separate Male/Female columns)
+- ✅ **HALE gap model notebook created**: `model_hale.md` created by copying `model_le.md` and adapting it to use `HALE_gap` as the target variable
+
+**Step 8.2: Model Fitting for Life Expectancy** ✅ **COMPLETE** (in `model_le.md` and `model_hale.md`)
+- ✅ Fit Ridge, Lasso, and Elastic Net models with cross-validation for both LE and HALE
+- ✅ Use 5-fold cross-validation for model selection
+- ✅ Compare model performance (R², MAE) across models
+- ✅ Selected Elastic Net as primary model for both LE and HALE (consistent with methodology)
+
+**Step 8.3: Model Interpretation for Life Expectancy** ✅ **COMPLETE** (in `model_le.md` and `model_hale.md`)
+- ✅ Extract coefficients and calculate feature importance for both LE and HALE
+- ✅ Rank predictors by importance for both life expectancy gap and HALE gap
+- ✅ Calculate indicator-level importance (aggregating Mid and Gap predictors) for both models
+- ✅ Create visualizations of predictor importance for both models (all non-zero coefficients)
+- ✅ Perform model diagnostics (residual analysis, outlier identification) for both models
+- ✅ **Compare with HALE results**: Comparison section added to `hale_gaps.md` summarizing differences between LE and HALE results
+
+**Step 8.4: Counterfactual Analysis for Life Expectancy** ✅ **COMPLETE**
+- ✅ Repeat Phase 5 analysis for both LE and HALE:
+  - ✅ Create counterfactual prediction function for both life expectancy gap and HALE gap
+  - ✅ Generate gap predictor analysis table (gap extremes) for both models
+  - ✅ Test counterfactual scenarios for United States (example country)
+  - ✅ Calculate aggregate effects (sum of gap-closing and gap-widening indicators)
+- ✅ **Compare with HALE counterfactuals**: Comparison documented in `hale_gaps.md` showing which factors have larger/smaller impact on life expectancy gap vs HALE gap
+- ✅ Counterfactual results exported to HTML tables and included in report
+
+**Step 8.5: Export and Document Results** ✅ **COMPLETE**
+- ✅ **Export Life Expectancy model results** (from `model_le.md`) as HTML tables:
+  - Model performance summary (R², MAE, cross-validation scores) → `model_comparison_le.html`
+  - Feature importance table (predictor-level) → `predictor_importance_le.html`
+  - Indicator-level importance table → `indicator_importance_le.html`
+  - Coefficient comparison table (Elastic Net vs OLS) → `elasticnet_ols_coefficient_comparison_le.html`
+  - Performance comparison table → `performance_comparison_le.html`
+  - Country-level predictions and residuals table → `predictions_comparison_le.html`, `residuals_by_country_le.html`
+  - Counterfactual analysis table → `counterfactuals_usa_le.html`
+- ✅ **Incorporate Life Expectancy results into `hale_gaps.md`**:
+  - ✅ Added comprehensive section for Life Expectancy model results
+  - ✅ Included exported HTML tables using MyST `{include}` directive
+  - ✅ Added figures using MyST `{figure}` directive
+- ✅ **Create HALE gap model notebook**:
+  - ✅ Created `model_hale.md` by copying `model_le.md` and adapting to use `HALE_gap` as target variable
+  - ✅ Ran model fitting, interpretation, and diagnostics
+- ✅ **Export HALE model results** as HTML tables (same format as Life Expectancy, with `_hale` suffix)
+- ✅ **Incorporate HALE results into `hale_gaps.md`**:
+  - ✅ Added comprehensive section for HALE model results (mirroring LE structure)
+  - ✅ Included exported HTML tables and figures
+- ✅ **Compare HALE vs Life Expectancy Results:**
+  - ✅ Added comparison section in `hale_gaps.md` summarizing differences
+  - ✅ Side-by-side comparison of feature importance rankings
+  - ✅ Compare which indicators explain more/less of each gap
+  - ✅ Compare counterfactual predictions (which factors would have larger impact on each gap)
+  - ✅ Document differences in model performance (R², MAE)
+  - ✅ Identify indicators that are more important for one gap vs the other
+- ✅ **Document Findings:**
+  - ✅ Summarize which factors explain largest portions of life expectancy gap variation
+  - ✅ Compare with HALE findings to identify common vs unique drivers
+  - ✅ Report counterfactual insights for both life expectancy gap and HALE gap
+  - ✅ Document substantial differences between HALE and life expectancy models
+  - ✅ Added contextual explanations (e.g., cardiovascular disease and age, neoplasms and smoking history)
+  - ✅ Clarified terminology (e.g., "Cardiovascular disease" instead of "Cardiovascular")
+  - ✅ Added note explaining difference between importance (general effectiveness) and counterfactual results (country-specific impact)
+
+**Key Differences from HALE Analysis:**
+- **Target Variable**: Life expectancy gap (Female - Male) instead of HALE gap
+- **Predictor Set**: Same predictors as HALE model (see "Recommendations for Life Expectancy Gender Gap Model" section)
+- **Focus**: Life expectancy captures all years lived (healthy and unhealthy), while HALE focuses on healthy years only
+- **Expected Similarities**: Both are calculated from birth, so both should be affected by the same mortality patterns (adult mortality, infant/child mortality, etc.)
+- **Expected Differences**: The relative importance of early-life vs adult mortality may differ, and factors affecting morbidity but not mortality may be less relevant for life expectancy
+
+**Implementation Notes:**
+- Life expectancy data is already prepared in Phase 1 (Step 1.2) and saved to the HDF5 data file
+- ✅ `model_le.md` (renamed from `model2.md`) uses `LifeExpectancy_gap` as the target variable
+- ✅ **HALE gap model created**: `model_hale.md` created by copying `model_le.md` and adapting it to use `HALE_gap` as the target variable
+- ✅ Reused the same data preparation code, changed the target variable reference
+- ✅ Maintained consistency in model fitting and interpretation approaches to enable direct comparison
+- ✅ All output files (tables and figures) use `_le` or `_hale` suffixes to distinguish between models
 
 ### Implementation Notes
 
 - **Primary Tools**: scikit-learn for model fitting (`Ridge`, `Lasso`, `ElasticNet`, `GridSearchCV`, `StandardScaler`)
 - **Secondary Tools**: statsmodels for diagnostics if needed
-- **Data Sources**: Use `who_data.py` for downloading WHO indicators
+- **Data Sources**: 
+  - **WHO Global Health Observatory (GHO) API**: Use `who_data.py` for downloading WHO indicators via the GHO OData API (https://www.who.int/data/gho/info/gho-odata-api). Provides access to HALE, Life Expectancy, and various cause-specific mortality indicators.
+  - **IHME Global Burden of Disease**: Data downloaded from IHME GBD Compare (https://vizhub.healthdata.org/gbd-compare/) as CSV files with separate male and female files. IHME data is used for indicators where it provides better temporal coverage than WHO (e.g., cardiovascular disease, diabetes, chronic respiratory disease, neoplasms, drug use disorders, unintentional injuries). The `load_ihme_indicator()` function in `eda.md` converts IHME format to WHO-compatible format for consistency.
 - **Country Codes**: Use `oecd_codes` from `utils.py` for OECD country filtering
 - **Target Variable**: HALE gap = Female HALE - Male HALE (difference, not ratio)
 - **Focus**: Direct causal indicators only (mortality/health indicators), not indirect indicators like GDP
 
-## Expected Outcomes
-<!-- What do you hope to discover? -->
 
-## Notes
-<!-- Add any additional notes, ideas, or observations -->
 
 ## Results
 
-### Model 1: Elastic Net Regression (OECD Countries, Pre-COVID Data)
+### Model 1: Elastic Net Regression for Life Expectancy Gap (OECD Countries, Pre-COVID Data)
 
 **Model Summary:**
 
-This first iteration of the HALE gender gap model uses Elastic Net regression with cross-validation on OECD countries using pre-COVID data (2000-2019). The model includes 10 health indicators with separate male and female values as predictors (20 predictors total, plus 1 female-only indicator for maternal mortality).
+This first iteration of the Life Expectancy gender gap model (in `model2.md`) uses Elastic Net regression with cross-validation on OECD countries using pre-COVID data (2000-2019). The model includes 12 health indicators with Mid and Gap columns as predictors (Mid + Gap format, not separate Male/Female columns), plus 1 female-only indicator for maternal mortality.
 
 **Data:**
 - **Countries**: OECD countries with complete data (complete-case analysis)
 - **Time Period**: Most recent available year per country/indicator (2000-2019, excluding 2020+ to avoid COVID-19 distortions)
-- **Target Variable**: HALE gap = Female HALE - Male HALE (in years)
-- **Predictors**: Age-standardized mortality/health indicators with male and female values separately:
-  - Smoking prevalence
+- **Target Variable**: Life Expectancy gap = Female LE - Male LE (in years) - **Note**: `model2.md` analyzes Life Expectancy gap, not HALE gap
+- **Predictors**: Age-standardized mortality/health indicators in Mid + Gap format:
   - Cardiovascular disease death rates
+  - Chronic respiratory disease death rates
   - Suicide rates
   - Alcohol-attributable death rates
   - Poisoning rates
@@ -591,43 +831,13 @@ This first iteration of the HALE gender gap model uses Elastic Net regression wi
   - Maternal mortality ratio (female-only)
   - Under-five mortality rate
   - Diabetes death rates
-  - NCD mortality (30-70 years)
+  - Drug use disorder death rates
+  - Unintentional injuries death rates
 
 **Model Performance:**
 - Model selected via 5-fold cross-validation with GridSearchCV
 - Elastic Net chosen as primary model (combines Ridge and Lasso regularization)
 - Cross-validation R² and RMSE calculated for model comparison
 
-**Feature Importance (Permutation Importance):**
 
-Permutation importance measures the mean decrease in R² when each feature is randomly permuted. Higher values indicate more important features. Results aggregated by indicator (sum of male and female importance):
 
-| Indicator | Male Perm Importance | Female Perm Importance | Total Perm Importance |
-|-----------|---------------------|----------------------|---------------------|
-| AlcoholDeathRate | 1.665 | 0.774 | 2.439 |
-| HomicideRate | 0.624 | 0.148 | 0.773 |
-| NCDMortality30_70 | 0.491 | 0.117 | 0.607 |
-| SmokingPrevalence | 0.187 | 0.213 | 0.401 |
-| SuicideRate | 0.242 | 0.089 | 0.331 |
-| U5MR | -0.000 | 0.034 | 0.034 |
-| RoadTrafficDeathRate | 0.022 | 0.000 | 0.022 |
-| DiabetesDeathRate | 0.005 | 0.001 | 0.005 |
-| PoisoningRate | 0.001 | 0.000 | 0.001 |
-| MaternalMortalityRatio | NaN | 0.000 | 0.000 |
-
-**Key Findings:**
-- **Alcohol-attributable deaths** is by far the most important predictor (Total: 2.439), with male alcohol deaths being the single most important feature (1.665)
-- **Homicide rates** are the second most important (Total: 0.773), with male homicide rates contributing most (0.624)
-- **NCD mortality (30-70 years)** ranks third (Total: 0.607), again with male rates being more important
-- **Smoking prevalence** shows more balanced gender importance (Male: 0.187, Female: 0.213), suggesting both male and female smoking rates matter
-- Most indicators show higher male importance, consistent with the HALE gap being driven primarily by excess male mortality
-- Several indicators (RoadTrafficDeathRate, DiabetesDeathRate, PoisoningRate, MaternalMortalityRatio) show very low or zero importance, suggesting they contribute little to explaining HALE gap variation in OECD countries
-
-**Comments**
-- It's not surprising that maternal mortality has low importance -- it is quite low in all OECD countries
-- Road traffic is very different for males and females, but maybe small enough to have little net effect
-- Under 5 mortality is different for males and females, but very low rates in OECD countries. Including this primarily to rule it out because people ask.
-- Smoking and NCD are complicated in terms of causation -- for a next iteration it would be better to get death rates from conditions caused by smoking
-- It's surprising that poisoning has so little effect, as I thought it would include overdose deaths. We might need to replace this with an indicator that we are confident captures overdoses (e.g., drug overdose deaths, opioid-related deaths). Need to check if WHO has separate overdose indicators or if OWID/other sources are needed.
-- Diabetes death rates show very low importance (0.005), which may be because it's already captured by NCD mortality (30-70), which shows much higher importance (0.607)
-- Alcohol-attributable deaths are by far the most important predictor (2.439), which aligns with known patterns of alcohol-related mortality and suggests alcohol is a primary driver of the HALE gap in OECD countries
