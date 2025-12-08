@@ -12,6 +12,8 @@ project:
     - file: index.md
     - file: hale_gaps.md
       title: Technical Report
+    - file: data_inventory.md
+      title: Data Inventory
 
 site:
   template: book-theme

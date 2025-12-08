@@ -676,7 +676,7 @@ Ranked by total importance (sum of male and female importance):
 **Step 6.2: Prepare for Future Analysis**
 - ✅ Document data limitations and coverage - Done in `eda.md` (missing data reports, year coverage)
 - ✅ Note any countries excluded and reasons - Done in `eda.md` (complete-case analysis)
-- ⚠️ Prepare framework for temporal analysis (Phase 2, future work) - Not yet implemented
+- ✅ Framework for temporal analysis defined - See Phase 9: Temporal Analysis (future work)
 - ⚠️ Prepare framework for larger country set analysis (future work) - Not yet implemented
 
 **Step 6.3: JupyterBook Site** ✅ **COMPLETE**
@@ -794,6 +794,143 @@ Perform the same analysis (Phases 3-5, 6) using period life expectancy as the ta
 - ✅ Reused the same data preparation code, changed the target variable reference
 - ✅ Maintained consistency in model fitting and interpretation approaches to enable direct comparison
 - ✅ All output files (tables and figures) use `_le` or `_hale` suffixes to distinguish between models
+
+### Phase 9: Temporal Analysis (Future Work)
+
+**Overview:**
+Repeat the analysis (Phases 1-5) at multiple time points to understand how the HALE and Life Expectancy gender gaps, and their predictors, have changed over time. This temporal analysis will help identify:
+- Whether the gender gap is narrowing or widening over time
+- Which predictors have become more or less important over time
+- How changes in specific indicators (e.g., smoking rates, alcohol consumption) have affected the gender gap
+- Whether the relative importance of different factors has shifted
+
+**Step 9.1: Replace WHO Indicators with IHME Indicators for Consistency** ⚠️ **TO DO**
+
+**Rationale**: Many IHME indicators have better temporal coverage (1990-2023) than their WHO counterparts, and using IHME data consistently will provide:
+- More uniform temporal coverage across indicators
+- Consistent methodology and data sources
+- Ability to analyze longer time periods (starting from 1990 instead of 2000)
+
+**Indicators to Replace**:
+1. **Alcohol-attributable death rates**: Replace WHO `SA_0000001832` (2019 only) with IHME `B.7.1 Alcohol use disorders` (1990-2023)
+2. **Suicide rates**: Replace WHO `MH_12` (2000-2021) with IHME `B.7.3 Self-harm` (1990-2023) - provides earlier start date
+3. **Homicide rates**: Replace WHO `VIOLENCE_HOMICIDERATE` (2000-2021) with IHME `B.7.4 Interpersonal violence` (1990-2023) - provides earlier start date
+4. **Road traffic crash death rates**: Replace WHO `SA_0000001459` (2019 only) with IHME `Road injuries` (1990-2023) - provides much better temporal coverage
+5. **Cardiovascular disease death rates**: Already using IHME `B.2 Cardiovascular diseases` (replaces WHO 2004-only data)
+6. **Diabetes death rates**: Already using IHME `B.8.1.2 Diabetes mellitus type 2` (replaces WHO 2004-only data)
+7. **Chronic respiratory disease death rates**: Already using IHME `B.3 Chronic respiratory diseases`
+8. **Unintentional injuries death rates**: Already using IHME `Unintentional injuries`
+
+**Indicators to Keep from WHO** (no IHME equivalent or WHO has better coverage):
+- **HALE and Life Expectancy**: Keep WHO data (primary target variables)
+- **Maternal mortality ratio**: Consider replacing WHO `MDG_0000000026` (1985-2023, ratio per 100,000 live births) with IHME `Maternal disorders` (1990-2023, rate per 100,000 population) - Note: Different measurement units (ratio vs rate), but IHME provides consistent methodology with other IHME indicators. WHO starts earlier (1985) but IHME may be preferred for consistency.
+- **Under-five mortality rate**: Keep WHO `MDG_0000000007` (excellent coverage: 1932-2023, per 1,000 live births). Note: IHME also provides all-cause deaths under 5 years (per 100,000 population) which is a complementary indicator with different measurement units. Both may be useful for analysis.
+- **Unintentional poisoning rates**: Keep WHO `SDGPOISON` (2000-2021, no IHME equivalent)
+
+**Implementation**:
+- Update `eda.md` to load IHME versions of alcohol, suicide, homicide, and road injuries indicators
+- Update data loading code to use IHME indicators where they provide better temporal coverage
+- Ensure all IHME indicators use the same `load_ihme_indicator()` function for consistency
+- Document which indicators are from IHME vs WHO in the data inventory
+
+**Step 9.2: Select Time Points for Analysis** ⚠️ **TO DO**
+
+**Recommended Time Points**:
+- **1990**: Early time point, before many health interventions and policy changes
+- **2000**: Baseline for many health indicators, start of WHO data for many indicators
+- **2010**: Mid-point, allows assessment of changes over a decade
+- **2019**: Pre-COVID baseline, most recent year before pandemic distortions
+- **Optional: 2015**: Additional mid-point if needed for finer temporal resolution
+
+**Considerations**:
+- Use the same time point across all indicators (complete-case analysis per time point)
+- Some indicators may not have data for all time points (document missing data)
+- Focus on time points where most indicators have data available
+- Exclude 2020+ to avoid COVID-19 pandemic distortions
+
+**Step 9.3: Prepare Data for Each Time Point** ⚠️ **TO DO**
+
+**For each selected time point**:
+- Load all predictor indicators for that specific year (not most recent year)
+- Filter to OECD countries with complete data for that year
+- Compute gender gaps (Mid and Gap columns) for each indicator at that time point
+- Prepare target variables (HALE gap and Life Expectancy gap) for that time point
+- Create separate datasets for each time point, saved to HDF5 files (e.g., `hale_analysis_data_1990.h5`, `hale_analysis_data_2000.h5`, etc.)
+
+**Implementation**:
+- Modify `load_and_inventory()` function to accept a specific year parameter
+- Modify `summarize_gap()` function to select a specific year instead of most recent year
+- Create a loop or function to process all time points systematically
+- Document which countries are included at each time point (coverage may vary)
+
+**Step 9.4: Fit Models for Each Time Point** ⚠️ **TO DO**
+
+**For each time point**:
+- Fit Elastic Net models (same methodology as Phase 3) for both HALE gap and Life Expectancy gap
+- Use same cross-validation approach (5-fold CV) for model selection
+- Extract coefficients and calculate feature importance for each time point
+- Calculate model performance metrics (R², MAE, RMSE) for each time point
+
+**Implementation**:
+- Create a function or loop to fit models for all time points
+- Store model results in a structured format (e.g., dictionary with time point as key)
+- Compare model performance across time points
+- Identify which predictors are consistently important vs. time-varying
+
+**Step 9.5: Analyze Temporal Changes** ⚠️ **TO DO**
+
+**Key Analyses**:
+1. **Target Variable Trends**: 
+   - Plot HALE gap and Life Expectancy gap over time (by country and average)
+   - Identify countries where gap is narrowing vs. widening
+   - Calculate average gap change per decade
+
+2. **Predictor Trends**:
+   - Plot predictor values (rates and gaps) over time for each indicator
+   - Identify which predictors have changed most over time
+   - Compare male vs. female trends for each indicator
+
+3. **Model Coefficient Trends**:
+   - Plot coefficient values over time for each predictor
+   - Identify which predictors have become more/less important over time
+   - Calculate correlation between predictor trends and gap trends
+
+4. **Feature Importance Trends**:
+   - Plot feature importance rankings over time
+   - Identify which indicators have gained or lost importance
+   - Compare HALE vs. Life Expectancy importance trends
+
+5. **Model Performance Trends**:
+   - Compare R² and other performance metrics across time points
+   - Assess whether the model explains more or less variance over time
+   - Identify time periods where model performance changes significantly
+
+**Step 9.6: Document Temporal Findings** ⚠️ **TO DO**
+
+**Documentation**:
+- Create summary tables showing:
+  - Gap values and trends by country and time point
+  - Predictor values and trends by indicator and time point
+  - Model coefficients and importance rankings by time point
+  - Model performance metrics by time point
+- Create visualizations:
+  - Time series plots for gaps, predictors, and coefficients
+  - Heatmaps showing importance rankings over time
+  - Country-level gap trends
+- Update JupyterBook site with temporal analysis results
+- Compare findings with existing literature on gender gap trends
+
+**Implementation Notes**:
+- Create new notebook `temporal_analysis.md` for this phase
+- Reuse functions from `eda.md` and `model_le.md`/`model_hale.md` where possible
+- Export temporal analysis results to HTML tables and figures
+- Include temporal analysis section in `hale_gaps.md` JupyterBook site
+
+**Expected Insights**:
+- Understanding of how the gender gap has evolved over time
+- Identification of which factors have driven changes in the gap
+- Assessment of whether policy interventions have been effective
+- Comparison of HALE vs. Life Expectancy gap trends
 
 ### Implementation Notes
 

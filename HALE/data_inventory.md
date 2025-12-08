@@ -162,6 +162,161 @@ Data downloaded from IHME Global Burden of Disease (GBD) Compare tool: https://v
 **Relevance**: Drug overdoses, particularly opioid overdoses, are a major cause of death in some OECD countries (especially the US) and may contribute significantly to the HALE gender gap. This indicator captures overdose deaths that may not be fully captured in the WHO poisoning indicator.  
 **Note**: Data includes separate male and female values, allowing for gender gap analysis. Country names in IHME data use "Republic of Korea" and "United States of America" which are mapped to "South Korea" and "United States" respectively for compatibility with WHO country name mappings.
 
+### Alcohol Use Disorders Death Rates (Downloaded)
+
+**Indicator**: B.7.1 Alcohol use disorders  
+**Measure**: Deaths  
+**Metric**: Rate (per 100,000 population)  
+**Locations**: OECD countries  
+**Age**: All ages  
+**Sex**: Separate files for Male and Female
+
+**GBD Compare Tool Settings**:
+- Display: Cause
+- Cause: B.7.1 Alcohol use disorders
+- Measure: Deaths
+- Locations: OECD
+- Age: All
+- Sex: Both (downloaded separately as Male and Female)
+- Metric: Rate
+
+**Files**:
+- `data/ihme_alcohol_use_disorders_deaths_male.csv`
+- `data/ihme_alcohol_use_disorders_deaths_female.csv`
+
+**Status**: ⚠️ Downloaded but not yet integrated into model  
+**Relevance**: Alcohol use disorders are a significant cause of death and may contribute to the HALE gender gap. Men typically have higher rates of alcohol-related mortality than women. This indicator provides comprehensive alcohol use disorder death rates with excellent temporal coverage (1990-2023, 34 years) and good country coverage (40 countries). This is an alternative to the WHO alcohol-attributable death rate indicator (SA_0000001832) which only has data for 2019. IHME data provides much better temporal coverage, allowing for more recent data and temporal analysis.  
+**Note**: Data includes separate male and female values, allowing for gender gap analysis. Country names in IHME data use "Republic of Korea" and "United States of America" which are mapped to "South Korea" and "United States" respectively for compatibility with WHO country name mappings.
+
+### Self-Harm (Suicide) Death Rates (Downloaded)
+
+**Indicator**: B.7.3 Self-harm  
+**Measure**: Deaths  
+**Metric**: Rate (per 100,000 population)  
+**Locations**: OECD countries  
+**Age**: All ages  
+**Sex**: Separate files for Male and Female
+
+**GBD Compare Tool Settings**:
+- Display: Cause
+- Cause: B.7.3 Self-harm
+- Measure: Deaths
+- Locations: OECD
+- Age: All
+- Sex: Both (downloaded separately as Male and Female)
+- Metric: Rate
+
+**Files**:
+- `data/ihme_self_harm_deaths_male.csv`
+- `data/ihme_self_harm_deaths_female.csv`
+
+**Status**: ⚠️ Downloaded but not yet integrated into model  
+**Relevance**: Self-harm (suicide) is a significant cause of death and contributes to the HALE gender gap. Men typically have much higher suicide rates than women in most countries. This indicator provides comprehensive self-harm death rates with excellent temporal coverage (1990-2023, 34 years) and good country coverage (40 countries). This is an alternative to the WHO suicide rate indicator (MH_12) which has data for 2000-2021. IHME data provides slightly better temporal coverage (starting from 1990) and may have different methodology or data sources.  
+**Note**: Data includes separate male and female values, allowing for gender gap analysis. Country names in IHME data use "Republic of Korea" and "United States of America" which are mapped to "South Korea" and "United States" respectively for compatibility with WHO country name mappings.
+
+### Interpersonal Violence (Homicide) Death Rates (Downloaded)
+
+**Indicator**: B.7.4 Interpersonal violence  
+**Measure**: Deaths  
+**Metric**: Rate (per 100,000 population)  
+**Locations**: OECD countries  
+**Age**: All ages  
+**Sex**: Separate files for Male and Female
+
+**GBD Compare Tool Settings**:
+- Display: Cause
+- Cause: B.7.4 Interpersonal violence
+- Measure: Deaths
+- Locations: OECD
+- Age: All
+- Sex: Both (downloaded separately as Male and Female)
+- Metric: Rate
+
+**Files**:
+- `data/ihme_interpersonal_violence_deaths_male.csv`
+- `data/ihme_interpersonal_violence_deaths_female.csv`
+
+**Status**: ⚠️ Downloaded but not yet integrated into model  
+**Relevance**: Interpersonal violence (homicide) is a significant cause of death and contributes to the HALE gender gap. Men typically have much higher homicide rates than women in most countries. This indicator provides comprehensive interpersonal violence death rates with excellent temporal coverage (1990-2023, 34 years) and good country coverage (40 countries). This is an alternative to the WHO homicide rate indicator (VIOLENCE_HOMICIDERATE) which has data for 2000-2021. IHME data provides better temporal coverage (starting from 1990) and may have different methodology or data sources.  
+**Note**: Data includes separate male and female values, allowing for gender gap analysis. Country names in IHME data use "Republic of Korea" and "United States of America" which are mapped to "South Korea" and "United States" respectively for compatibility with WHO country name mappings.
+
+### Road Injuries (Road Traffic Crash) Death Rates (Downloaded)
+
+**Indicator**: Road injuries  
+**Measure**: Deaths  
+**Metric**: Rate (per 100,000 population)  
+**Locations**: OECD countries  
+**Age**: All ages  
+**Sex**: Separate files for Male and Female
+
+**GBD Compare Tool Settings**:
+- Display: Cause
+- Cause: Road injuries
+- Measure: Deaths
+- Locations: OECD
+- Age: All
+- Sex: Both (downloaded separately as Male and Female)
+- Metric: Rate
+
+**Files**:
+- `data/ihme_road_injuries_deaths_male.csv`
+- `data/ihme_road_injuries_deaths_female.csv`
+
+**Status**: ⚠️ Downloaded but not yet integrated into model  
+**Relevance**: Road injuries (road traffic crashes) are a significant cause of death and contribute to the HALE gender gap. Men typically have 2-4 times higher road traffic death rates than women in most countries due to higher exposure to driving (including occupational exposure), occupational hazards, and potentially risk-taking behaviors. This indicator provides comprehensive road injury death rates with excellent temporal coverage (1990-2023, 34 years) and good country coverage (40 countries). This is an alternative to the WHO road traffic crash death rate indicator (SA_0000001459) which only has data for 2019. IHME data provides much better temporal coverage, allowing for temporal analysis and more recent data.  
+**Note**: Data includes separate male and female values, allowing for gender gap analysis. Country names in IHME data use "Republic of Korea" and "United States of America" which are mapped to "South Korea" and "United States" respectively for compatibility with WHO country name mappings.
+
+### Maternal Disorders Death Rates (Downloaded)
+
+**Indicator**: Maternal disorders  
+**Measure**: Deaths  
+**Metric**: Rate (per 100,000 population)  
+**Locations**: OECD countries  
+**Age**: All ages  
+**Sex**: Female only (inherently female-specific)
+
+**GBD Compare Tool Settings**:
+- Display: Cause
+- Cause: Maternal disorders
+- Measure: Deaths
+- Locations: OECD
+- Age: All
+- Sex: Female
+- Metric: Rate
+
+**Files**:
+- `data/ihme_maternal_disorders_deaths_female.csv`
+
+**Status**: ⚠️ Downloaded but not yet integrated into model  
+**Relevance**: Maternal disorders (maternal mortality) are a significant cause of death for women and can contribute to the HALE gender gap, especially in lower-income countries. High maternal mortality can significantly reduce female life expectancy, explaining why some countries have smaller gender gaps. This indicator provides comprehensive maternal disorder death rates with excellent temporal coverage (1990-2023, 34 years) and good country coverage (40 countries). This is an alternative to the WHO maternal mortality ratio indicator (MDG_0000000026) which has data for 1985-2023. Note: WHO indicator uses ratio per 100,000 live births, while IHME uses rate per 100,000 population, so they measure slightly different things. IHME data may be useful for temporal analysis and provides consistent methodology with other IHME indicators.  
+**Note**: Maternal disorders are inherently female-specific (deaths during pregnancy, childbirth, or within 42 days of termination of pregnancy). Country names in IHME data use "Republic of Korea" and "United States of America" which are mapped to "South Korea" and "United States" respectively for compatibility with WHO country name mappings.
+
+### All-Cause Deaths Under 5 Years of Age (Downloaded)
+
+**Indicator**: All causes (under 5 years)  
+**Measure**: Deaths  
+**Metric**: Rate (per 100,000 population)  
+**Locations**: OECD countries  
+**Age**: <5 years  
+**Sex**: Separate files for Male and Female
+
+**GBD Compare Tool Settings**:
+- Display: Cause
+- Cause: All causes
+- Measure: Deaths
+- Locations: OECD
+- Age: <5 years
+- Sex: Both (downloaded separately as Male and Female)
+- Metric: Rate
+
+**Files**:
+- `data/ihme_all_causes_under5_deaths_male.csv`
+- `data/ihme_all_causes_under5_deaths_female.csv`
+
+**Status**: ⚠️ Downloaded but not yet integrated into model  
+**Relevance**: All-cause mortality for children under 5 years of age is relevant to the HALE gender gap because HALE is calculated from birth, so early-life mortality directly affects HALE calculations. If child mortality differs by gender, it directly contributes to the HALE gender gap. Infant and child mortality is typically higher in males (biological vulnerability + some behavioral factors). This indicator provides comprehensive all-cause under-5 mortality rates with excellent temporal coverage (1990-2023, 34 years) and good country coverage (40 countries). This is different from the WHO under-five mortality rate (U5MR, MDG_0000000007) which measures deaths per 1,000 live births. The IHME indicator measures deaths per 100,000 population, providing a complementary perspective on early-life mortality. Data includes separate male and female values, allowing for gender gap analysis.  
+**Note**: Data includes separate male and female values, allowing for gender gap analysis. Country names in IHME data use "Republic of Korea" and "United States of America" which are mapped to "South Korea" and "United States" respectively for compatibility with WHO country name mappings.
+
 ### Diabetes Type 2 Death Rates (Downloaded)
 
 **Indicator**: B.8.1.2 Diabetes mellitus type 2  
@@ -211,6 +366,84 @@ Data downloaded from IHME Global Burden of Disease (GBD) Compare tool: https://v
 
 **Status**: ⚠️ Downloaded but not yet integrated into model  
 **Relevance**: Cardiovascular diseases are a major cause of death and may contribute significantly to the HALE gender gap. This is an alternative to the WHO cardiovascular disease death rate indicators which only have data for 2004. IHME data may have better temporal coverage, allowing for more recent data to be used in the analysis.  
+**Note**: Data includes separate male and female values, allowing for gender gap analysis. Country names in IHME data use "Republic of Korea" and "United States of America" which are mapped to "South Korea" and "United States" respectively for compatibility with WHO country name mappings.
+
+### Neoplasms (Cancer) Death Rates (Downloaded)
+
+**Indicator**: B.1 Neoplasms  
+**Measure**: Deaths  
+**Metric**: Rate (per 100,000 population)  
+**Locations**: OECD countries  
+**Age**: All ages  
+**Sex**: Separate files for Male and Female
+
+**GBD Compare Tool Settings**:
+- Display: Cause
+- Cause: B.1 Neoplasms
+- Measure: Deaths
+- Locations: OECD
+- Age: All
+- Sex: Both (downloaded separately as Male and Female)
+- Metric: Rate
+
+**Files**:
+- `data/ihme_neoplasms_deaths_male.csv`
+- `data/ihme_neoplasms_deaths_female.csv`
+
+**Status**: ⚠️ Downloaded but not yet integrated into model  
+**Relevance**: Neoplasms (cancer) are a major cause of death and may contribute significantly to the HALE gender gap. Different types of cancer have different gender patterns (e.g., lung cancer is often higher in men, breast cancer is female-specific). This indicator provides comprehensive cancer death rates with better temporal coverage than WHO indicators.  
+**Note**: Data includes separate male and female values, allowing for gender gap analysis. Country names in IHME data use "Republic of Korea" and "United States of America" which are mapped to "South Korea" and "United States" respectively for compatibility with WHO country name mappings.
+
+### Chronic Respiratory Diseases Death Rates (Downloaded)
+
+**Indicator**: B.3 Chronic respiratory diseases  
+**Measure**: Deaths  
+**Metric**: Rate (per 100,000 population)  
+**Locations**: OECD countries  
+**Age**: All ages  
+**Sex**: Separate files for Male and Female
+
+**GBD Compare Tool Settings**:
+- Display: Cause
+- Cause: B.3 Chronic respiratory diseases
+- Measure: Deaths
+- Locations: OECD
+- Age: All
+- Sex: Both (downloaded separately as Male and Female)
+- Metric: Rate
+
+**Files**:
+- `data/ihme_chronic_respiratory_deaths_male.csv`
+- `data/ihme_chronic_respiratory_deaths_female.csv`
+
+**Status**: ⚠️ Downloaded but not yet integrated into model  
+**Relevance**: Chronic respiratory diseases (including COPD, asthma, and other chronic lung conditions) are a major cause of death and may contribute significantly to the HALE gender gap. These diseases often have gender differences due to factors such as smoking patterns, occupational exposures, and environmental factors. This indicator provides comprehensive chronic respiratory disease death rates with better temporal coverage than WHO indicators.  
+**Note**: Data includes separate male and female values, allowing for gender gap analysis. Country names in IHME data use "Republic of Korea" and "United States of America" which are mapped to "South Korea" and "United States" respectively for compatibility with WHO country name mappings.
+
+### Unintentional Injuries Death Rates (Downloaded)
+
+**Indicator**: Unintentional injuries  
+**Measure**: Deaths  
+**Metric**: Rate (per 100,000 population)  
+**Locations**: OECD countries  
+**Age**: All ages  
+**Sex**: Separate files for Male and Female
+
+**GBD Compare Tool Settings**:
+- Display: Cause
+- Cause: Unintentional injuries
+- Measure: Deaths
+- Locations: OECD
+- Age: All
+- Sex: Both (downloaded separately as Male and Female)
+- Metric: Rate
+
+**Files**:
+- `data/ihme_unintentional_injuries_deaths_male.csv`
+- `data/ihme_unintentional_injuries_deaths_female.csv`
+
+**Status**: ✅ Downloaded and integrated into model  
+**Relevance**: Unintentional injuries (including falls, drowning, fires, and other accidents) are a significant cause of death and may contribute to the HALE gender gap. These injuries often show gender differences due to occupational exposures, risk-taking behaviors, and activity patterns. This indicator provides comprehensive unintentional injury death rates with better temporal coverage (1990-2023) than many WHO indicators.  
 **Note**: Data includes separate male and female values, allowing for gender gap analysis. Country names in IHME data use "Republic of Korea" and "United States of America" which are mapped to "South Korea" and "United States" respectively for compatibility with WHO country name mappings.
 
 ### Road Traffic Crash Death Rate Indicators (Identified)
@@ -551,12 +784,53 @@ Multiple occupational-related death indicators have been identified from WHO GHO
 
 **Status**: ⚠️ **Not suitable for model** - No gender breakdowns, very limited temporal and country coverage. Occupational hazards remain an important theoretical factor but cannot be directly measured with available WHO GHO data.
 
+## Target Variables
+
+### HALE (Healthy Life Expectancy) - Primary Target Variable
+
+**Indicator**: WHOSIS_000002 - Healthy life expectancy (HALE) at birth (years)  
+**Source**: WHO GHO API  
+**File**: `data/who_hale_data.csv`  
+**Status**: ✅ Implemented
+
+**Data Details**:
+- **Records**: 12,936 (full dataset)
+- **Years**: 2000-2021 (22 years)
+- **Countries**: 196
+- **Sex categories**: Both sexes, Female, Male
+- **Coverage**: Excellent temporal and country coverage
+
+**Relevance**: HALE measures the average number of years that a person can expect to live in "full health" by taking into account years lived in less than full health due to disease and/or injury. This is the **primary target variable** for the analysis. The gender gap (Female HALE - Male HALE) measures the difference in healthy life expectancy between women and men.
+
+### Life Expectancy - Secondary Target Variable
+
+**Indicator**: WHOSIS_000001 - Life expectancy at birth (years)  
+**Source**: WHO GHO API  
+**File**: `data/who_life_expectancy_data.csv`  
+**Status**: ✅ Implemented
+
+**Data Details**:
+- **Records**: 12,936 (full dataset)
+- **Years**: 2000-2021 (22 years)
+- **Countries**: 196
+- **Sex categories**: Both sexes, Female, Male
+- **Coverage**: Excellent temporal and country coverage, matches HALE coverage
+
+**Relevance**: Life expectancy at birth measures the average number of years a person can expect to live, regardless of health status. This is the **secondary target variable** for the analysis, allowing comparison of which factors explain the gender gap in overall life expectancy versus healthy life expectancy. The gender gap (Female LE - Male LE) measures the difference in life expectancy between women and men.
+
+**Key Differences from HALE**:
+- Life expectancy captures all years lived (healthy and unhealthy), while HALE focuses on healthy years only
+- Both are calculated from birth, so both should be affected by the same mortality patterns
+- The relative importance of early-life vs adult mortality may differ between the two outcomes
+- Factors affecting morbidity but not mortality may be less relevant for life expectancy
+
 ## Promising Indicators Checklist
 
 Based on the [WHO GHO Indicators Index](https://www.who.int/data/gho/data/indicators/indicators-index), the following indicators are most relevant for analyzing HALE gender gaps. They are likely to differ between men and women and are related to causes of death.
 
 ### Already Implemented ✅
-- [x] **HALE (Healthy Life Expectancy)** - Target variable (WHOSIS_000002)
+- [x] **HALE (Healthy Life Expectancy)** - Primary target variable (WHOSIS_000002)
+- [x] **Life Expectancy** - Secondary target variable (WHOSIS_000001)
 - [x] **Cardiovascular disease death rates** - Age-standardized, by gender
 - [x] **Smoking prevalence** - Age-standardized tobacco smoking, by gender (M_Est_smk_curr_std)
 - [x] **Suicide rates** - Age-standardized, by gender (MH_12)
@@ -598,4 +872,57 @@ Based on the [WHO GHO Indicators Index](https://www.who.int/data/gho/data/indica
 - Prioritize indicators with gender breakdowns (Male, Female, Both sexes)
 - Consider temporal coverage - indicators with multiple years are preferred
 - Some indicators may need to be searched by alternative names or codes
+
+## WHO and IHME Indicator Correspondence
+
+This table shows how WHO and IHME indicators correspond to each other, helping identify alternatives and complementary data sources.
+
+| Indicator Category | WHO Indicator | WHO Code | WHO Temporal Coverage | IHME Indicator | IHME Code | IHME Temporal Coverage | Relationship |
+|-------------------|---------------|----------|----------------------|----------------|-----------|----------------------|--------------|
+| **Target Variables** |
+| HALE | Healthy Life Expectancy | WHOSIS_000002 | 2000-2021 | — | — | — | WHO only (primary source) |
+| Life Expectancy | Life Expectancy at Birth | WHOSIS_000001 | 2000-2021 | — | — | — | WHO only (primary source) |
+| **Alcohol-Related** |
+| Alcohol-attributable deaths | Alcohol-attributable all-cause deaths | SA_0000001832 | 2019 only | Alcohol use disorders | B.7.1 | 1990-2023 | IHME alternative (better temporal coverage) |
+| **Suicide/Self-Harm** |
+| Suicide rates | Age-standardized suicide rates | MH_12 | 2000-2021 | Self-harm | B.7.3 | 1990-2023 | IHME alternative (starts earlier) |
+| **Violence/Homicide** |
+| Homicide rates | Estimates of homicide rates | VIOLENCE_HOMICIDERATE | 2000-2021 | Interpersonal violence | B.7.4 | 1990-2023 | IHME alternative (starts earlier) |
+| **Road Traffic** |
+| Road traffic crashes | Road traffic crash deaths (15+) | SA_0000001459 | 2019 only | Road injuries | Road injuries | 1990-2023 | IHME alternative (much better temporal coverage) |
+| **Maternal Mortality** |
+| Maternal mortality ratio | Maternal mortality ratio | MDG_0000000026 | 1985-2023 | Maternal disorders | Maternal disorders | 1990-2023 | Complementary (different units: ratio vs rate) |
+| **Child Mortality** |
+| Under-five mortality rate | Under-five mortality rate | MDG_0000000007 | 1932-2023 | All-cause deaths under 5 | All causes (<5 years) | 1990-2023 | Complementary (different units: per 1,000 live births vs per 100,000 population) |
+| **Diabetes** |
+| Diabetes death rates | Age-standardized diabetes death rates | SA_0000001440 | 2004 only | Diabetes type 2 | B.8.1.2 | 1990-2023 | IHME alternative (much better temporal coverage) |
+| **Cardiovascular Disease** |
+| Cardiovascular disease | Age-standardized cardiovascular death rates | Various (WHS2_161, etc.) | 2004 only | Cardiovascular diseases | B.2 | 1990-2023 | IHME alternative (much better temporal coverage) |
+| **Chronic Respiratory Disease** |
+| — | — | — | — | Chronic respiratory diseases | B.3 | 1990-2023 | IHME only (no WHO equivalent with good coverage) |
+| **Cancer** |
+| — | — | — | — | Neoplasms (cancer) | B.1 | 1990-2023 | IHME only (no WHO equivalent with good coverage) |
+| **Injuries** |
+| Unintentional poisoning | Mortality rate from unintentional poisoning | SDGPOISON | 2000-2021 | — | — | — | WHO only (no IHME equivalent) |
+| Unintentional injuries | — | — | — | Unintentional injuries | Unintentional injuries | 1990-2023 | IHME only (broader than WHO poisoning) |
+| **Drug Use** |
+| — | — | — | — | Drug use disorders | B.7.2 | 1990-2023 | IHME only (no WHO equivalent) |
+| **Other** |
+| Smoking prevalence | Age-standardized tobacco smoking | M_Est_smk_curr_std | 2000-2030 | — | — | — | WHO only (prevalence indicator, not mortality) |
+| NCD mortality (30-70) | Probability of dying 30-70 from NCDs | NCDMORT3070 | 2000-2021 | — | — | — | WHO only (combined indicator) |
+| Intimate partner violence | IPV prevalence | SDGIPV | 2000-2017 | — | — | — | WHO only (prevalence indicator, not mortality) |
+
+### Notes on Correspondence:
+
+1. **IHME alternatives with better temporal coverage**: Alcohol use disorders, Self-harm, Interpersonal violence, Road injuries, Diabetes type 2, and Cardiovascular diseases all have IHME versions with much better temporal coverage (1990-2023) compared to their WHO counterparts (often 2004 or 2019 only).
+
+2. **Complementary indicators**: 
+   - Maternal mortality: WHO uses ratio per 100,000 live births; IHME uses rate per 100,000 population
+   - Under-five mortality: WHO uses rate per 1,000 live births; IHME all-cause under-5 uses rate per 100,000 population
+
+3. **IHME-only indicators**: Chronic respiratory diseases, Neoplasms, Unintentional injuries, and Drug use disorders are available from IHME but have no good WHO equivalent with adequate temporal coverage.
+
+4. **WHO-only indicators**: Smoking prevalence, NCD mortality (30-70), Intimate partner violence, and Unintentional poisoning are available from WHO but have no IHME equivalent.
+
+5. **Target variables**: HALE and Life Expectancy are only available from WHO and serve as the primary target variables for the analysis.
 
