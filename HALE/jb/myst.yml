@@ -10,10 +10,15 @@ project:
   github: https://github.com/AllenDowney/EqualityWEF
   toc:
     - file: index.md
-    - file: hale_gaps.md
+    - file: tech_report.md
       title: Technical Report
     - file: data_inventory.md
       title: Data Inventory
+    - file: eda.ipynb
+      title: Exploratory Data Analysis
+    - file: validation.md
+      title: Validation Experiments
+
 
 site:
   template: book-theme

@@ -10,6 +10,10 @@ help:
 	@echo "  make serve    - Build and serve locally"
 
 build:
+	BASE_URL=/EqualityWEF/ jupyter book build --html --strict
+	touch _build/html/.nojekyll
+
+build-local:
 	jupyter book build --html --strict
 
 clean:
@@ -18,6 +22,6 @@ clean:
 deploy: build
 	ghp-import -n -p -f _build/html
 
-serve: build
+serve: build-local
 	cd _build/html && python -m http.server 8000
 
