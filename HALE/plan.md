@@ -804,34 +804,114 @@ Repeat the analysis (Phases 1-5) at multiple time points to understand how the H
 - How changes in specific indicators (e.g., smoking rates, alcohol consumption) have affected the gender gap
 - Whether the relative importance of different factors has shifted
 
-**Step 9.1: Replace WHO Indicators with IHME Indicators for Consistency** ⚠️ **TO DO**
+**Step 9.1: Replace WHO Indicators with IHME Indicators for Consistency** ✅ **COMPLETE**
 
 **Rationale**: Many IHME indicators have better temporal coverage (1990-2023) than their WHO counterparts, and using IHME data consistently will provide:
 - More uniform temporal coverage across indicators
 - Consistent methodology and data sources
 - Ability to analyze longer time periods (starting from 1990 instead of 2000)
 
-**Indicators to Replace**:
-1. **Alcohol-attributable death rates**: Replace WHO `SA_0000001832` (2019 only) with IHME `B.7.1 Alcohol use disorders` (1990-2023)
-2. **Suicide rates**: Replace WHO `MH_12` (2000-2021) with IHME `B.7.3 Self-harm` (1990-2023) - provides earlier start date
-3. **Homicide rates**: Replace WHO `VIOLENCE_HOMICIDERATE` (2000-2021) with IHME `B.7.4 Interpersonal violence` (1990-2023) - provides earlier start date
-4. **Road traffic crash death rates**: Replace WHO `SA_0000001459` (2019 only) with IHME `Road injuries` (1990-2023) - provides much better temporal coverage
-5. **Cardiovascular disease death rates**: Already using IHME `B.2 Cardiovascular diseases` (replaces WHO 2004-only data)
-6. **Diabetes death rates**: Already using IHME `B.8.1.2 Diabetes mellitus type 2` (replaces WHO 2004-only data)
-7. **Chronic respiratory disease death rates**: Already using IHME `B.3 Chronic respiratory diseases`
-8. **Unintentional injuries death rates**: Already using IHME `Unintentional injuries`
+**Indicators Replaced**:
+1. ✅ **Alcohol-attributable death rates**: Replaced WHO `SA_0000001832` (2019 only) with IHME `B.7.1 Alcohol use disorders` (1990-2023)
+2. ✅ **Suicide rates**: Replaced WHO `MH_12` (2000-2021) with IHME `B.7.3 Self-harm` (1990-2023)
+3. ✅ **Homicide rates**: Replaced WHO `VIOLENCE_HOMICIDERATE` (2000-2021) with IHME `B.7.4 Interpersonal violence` (1990-2023)
+4. ✅ **Road traffic crash death rates**: Replaced WHO `SA_0000001459` (2019 only) with IHME `Road injuries` (1990-2023)
+5. ✅ **Cardiovascular disease death rates**: Using IHME `B.2 Cardiovascular diseases` (replaces WHO 2004-only data)
+6. ✅ **Diabetes death rates**: Using IHME `B.8.1.2 Diabetes mellitus type 2` (replaces WHO 2004-only data)
+7. ✅ **Chronic respiratory disease death rates**: Using IHME `B.3 Chronic respiratory diseases`
+8. ✅ **Unintentional injuries death rates**: Using IHME `Unintentional injuries`
+9. ✅ **Neoplasms death rates**: Using IHME `B.1 Neoplasms`
+10. ✅ **Drug use disorders**: Using IHME `B.7.5 Drug use disorders` (replaces WHO Poisoning)
 
-**Indicators to Keep from WHO** (no IHME equivalent or WHO has better coverage):
+**Indicators Removed**:
+- ✅ **WHO Poisoning**: Removed in favor of IHME Drug Use Disorders (better temporal coverage, more comprehensive)
+- ✅ **Maternal mortality**: Removed due to counterintuitive positive coefficient (higher female mortality associated with larger gap, contrary to expected mechanism)
+- ✅ **Under-five mortality rate (Childhood)**: Removed due to very low importance (0.0558 in LE model, not in top 10 for HALE) and limited temporal coverage. The IHME alternative (All-Cause Deaths Under 5, per 100,000 population) is confounded with age structure and fertility rates, making it methodologically inappropriate. Removing it simplifies the model without sacrificing meaningful predictive power.
+
+**Indicators Added**:
+- ✅ **Liver Disease**: Added IHME `B.7.2 Cirrhosis and other chronic liver diseases` (1990-2023) - captures all liver disease deaths (alcoholic and non-alcoholic)
+
+**Indicators Kept from WHO** (no IHME equivalent or WHO has better coverage):
 - **HALE and Life Expectancy**: Keep WHO data (primary target variables)
-- **Maternal mortality ratio**: Consider replacing WHO `MDG_0000000026` (1985-2023, ratio per 100,000 live births) with IHME `Maternal disorders` (1990-2023, rate per 100,000 population) - Note: Different measurement units (ratio vs rate), but IHME provides consistent methodology with other IHME indicators. WHO starts earlier (1985) but IHME may be preferred for consistency.
-- **Under-five mortality rate**: Keep WHO `MDG_0000000007` (excellent coverage: 1932-2023, per 1,000 live births). Note: IHME also provides all-cause deaths under 5 years (per 100,000 population) which is a complementary indicator with different measurement units. Both may be useful for analysis.
-- **Unintentional poisoning rates**: Keep WHO `SDGPOISON` (2000-2021, no IHME equivalent)
+- ~~**Under-five mortality rate**: Keep WHO `MDG_0000000007` (excellent coverage: 1932-2023, per 1,000 live births)~~ → **REMOVED** (see validation experiment #8)
 
 **Implementation**:
-- Update `eda.md` to load IHME versions of alcohol, suicide, homicide, and road injuries indicators
-- Update data loading code to use IHME indicators where they provide better temporal coverage
-- Ensure all IHME indicators use the same `load_ihme_indicator()` function for consistency
-- Document which indicators are from IHME vs WHO in the data inventory
+- ✅ Updated `eda.md` to load IHME versions of alcohol, suicide, homicide, road injuries, and other indicators
+- ✅ Updated data loading code to use IHME indicators where they provide better temporal coverage
+- ✅ All IHME indicators use the same `load_ihme_indicator()` function for consistency
+- ✅ Documented which indicators are from IHME vs WHO in the data inventory
+- ✅ Updated `column_name_mapping` in `utils.py` to map IHME indicator names to consistent short names (e.g., `AlcoholUseDisordersDeathRate` → `Alcohol`)
+- ✅ Added comparison section in `eda.md` showing side-by-side scatter plots comparing WHO and IHME indicators where both are available
+
+**Validation: Summary of Experiments Completed** ✅ **COMPLETE**
+
+A comprehensive validation process was completed, replacing indicators one at a time and comparing results to identify any major changes. All experiments are documented in `validation.md`. Summary of findings:
+
+**1. Alcohol: WHO → IHME** ✅ **COMPLETE**
+- **Major Finding**: Alcohol importance dropped dramatically (87% reduction) due to definitional differences
+  - WHO: "Alcohol-attributable all-cause deaths" (includes all deaths where alcohol is a contributing factor)
+  - IHME: "Alcohol use disorders" (only direct alcohol use disorder deaths)
+- **Impact**: Alcohol dropped from #1 to #4 (LE) and #2 to #5 (HALE)
+- **Model Performance**: Improved (R² +2.6% for LE, +6.3% for HALE)
+- **Conclusion**: Definitional differences are substantial; IHME definition is more restrictive
+
+**2. Suicide: WHO → IHME** ✅ **COMPLETE**
+- **Major Finding**: Suicide importance increased (+139% for LE, +42% for HALE)
+- **Impact**: Suicide moved into top 4-5 indicators
+- **Model Performance**: Improved (R² +2.9% for LE, +6.4% for HALE)
+- **Conclusion**: IHME data may capture suicide-related mortality more effectively
+
+**3. Homicide: WHO → IHME** ✅ **COMPLETE**
+- **Major Finding**: Homicide dropped out of Life Expectancy model entirely (not selected by Elastic Net)
+- **Impact**: Homicide importance decreased for HALE (-28%)
+- **Model Performance**: Unchanged (same as suicide replacement)
+- **Conclusion**: IHME homicide data less predictive than WHO data, or other indicators (Suicide) capture same variance
+
+**4. Road Traffic: WHO → IHME** ✅ **COMPLETE**
+- **Major Finding**: RoadTraffic has very low importance in both models (0.111 for LE, 0.633 for HALE)
+- **Impact**: RoadTraffic ranked #8-9, not a major factor
+- **Model Performance**: Improved (R² +2.2% for LE, +10.8% for HALE)
+- **Conclusion**: Road traffic deaths not a major predictive factor for gender gaps
+
+**5. Poisoning (WHO) → Drug Disorders (IHME)** ✅ **COMPLETE**
+- **Major Finding**: Neither indicator was selected by Elastic Net (importance = 0)
+- **Impact**: No impact on model performance
+- **Conclusion**: Drug-related mortality does not contribute significantly to explaining gender gaps
+
+**6. Adding Liver Disease Indicator** ✅ **COMPLETE**
+- **Major Finding**: Liver Disease has moderate importance (2.12 for LE ranked #4, 2.39 for HALE ranked #6)
+- **Impact**: Higher importance than Alcohol in both models
+- **Model Performance**: Small changes (R² +0.8% for LE, -5.9% for HALE)
+- **Conclusion**: Liver Disease captures broader set of alcohol-related mortality than narrow IHME "alcohol use disorders" definition
+
+**7. Removing Maternal Mortality** ✅ **COMPLETE**
+- **Major Finding**: Maternal Mortality had counterintuitive positive coefficient (higher female mortality associated with larger gap)
+- **Impact**: 
+  - Cardiovascular gained substantial importance in HALE model (+111%, moved from #4 to #2)
+  - Homicide gained substantial importance in HALE model (+60%, moved from #8 to #5)
+  - Homicide newly selected for Life Expectancy model
+- **Model Performance**: Minimal impact (R² -0.6% for LE, +2.5% for HALE)
+- **Conclusion**: Maternal Mortality was capturing spurious associations related to general healthcare quality; removal improves model interpretability
+
+**8. Removing Childhood Indicator (Under-Five Mortality)** ✅ **COMPLETE**
+- **Major Finding**: Childhood indicator had very low importance (0.0558 in LE model, not in top 10 for HALE) and limited temporal coverage. The IHME alternative (All-Cause Deaths Under 5, per 100,000 population) is confounded with age structure and fertility rates, making it methodologically inappropriate.
+- **Impact**: 
+  - Homicide gained substantial importance in both models (+70% for LE, +29% for HALE)
+  - Neoplasms strengthened in HALE model (+19%)
+  - Cardiovascular decreased in HALE model (-24%)
+  - Some redistribution of importance to other indicators
+- **Model Performance**: Minimal impact (R² +0.8% for LE, -0.3% for HALE)
+- **Conclusion**: Removing Childhood simplifies the model without sacrificing meaningful predictive power. The very low importance and lack of a suitable alternative (IHME version is confounded) justify removal.
+
+**Overall Validation Results**:
+- ✅ All indicator replacements completed and validated
+- ✅ Model performance generally improved with IHME data
+- ✅ Definitional differences between WHO and IHME indicators documented
+- ✅ Counterintuitive associations identified and addressed (Maternal Mortality removed)
+- ✅ Final model uses consistent IHME data sources with better temporal coverage
+- ✅ Comprehensive documentation in `validation.md` with detailed comparisons for each experiment
+
+
 
 **Step 9.2: Select Time Points for Analysis** ⚠️ **TO DO**
 
