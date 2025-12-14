@@ -18,7 +18,10 @@ project:
       title: Exploratory Data Analysis
     - file: validation.md
       title: Validation Experiments
-
+    - file: time_series_report.md
+      title: Time Series Analysis
+    - file: temporal.md
+      title: Temporal Analysis
 
 site:
   template: book-theme

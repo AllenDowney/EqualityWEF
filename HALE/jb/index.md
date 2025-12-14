@@ -14,6 +14,10 @@ This project explores differences in life expectancy and health-adjusted life ex
 
 - [Validation Experiments](validation.md) - Model validation comparing WHO and IHME indicators to ensure results remain stable across data sources.
 
+- [Time Series Analysis](time_series_report.md) - Trends in health indicators and gender gaps (2000-2019), visualizing how HALE, Life Expectancy, and cause-specific mortality indicators have evolved over time.
+
+- [Temporal Analysis](temporal.md) - Evolution of health patterns and gender gaps over time (2000-2019). Runs predictive models at five-year intervals (2000, 2005, 2010, 2015, 2019) and compares results to examine how indicator importance and intervention opportunities have changed.
+
 ## Methodology
 
 We use Elastic Net regression to model the gender gap in life expectancy and HALE as a function of cause-specific mortality indicators. This approach handles the high correlation among predictors and identifies which patterns of mortality are most strongly associated with the life expectancy gap.

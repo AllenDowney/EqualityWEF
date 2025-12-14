@@ -186,7 +186,7 @@ The top indicators are:
 
 1. **Neoplasms** (total importance: 11.4) — Cancer death rates are the dominant factor, with importance coming entirely from the gap component, not the overall rate. Some part of this gap is due to past smoking patterns, as men historically smoked more than women. As smoking rates continue to decline, this gap will likely shrink without further intervention, though efforts to reduce smoking should continue.
 
-2. **Unintentional Injury** (total importance: 5.11) — Unintentional injuries are the second most important factor, with importance coming entirely from the gap component. These injuries often show gender differences due to occupational exposures, risk-taking behaviors, and activity patterns.
+2. **Unintentional Injury** (total importance: 4.93) — Unintentional injuries are the second most important factor, with importance coming entirely from the gap component. These injuries often show gender differences due to occupational exposures, risk-taking behaviors, and activity patterns.
 
 3. **Chronic Respiratory disease** (total importance: 2.22) — Chronic respiratory disease contributes moderately, with contributions from both the overall rate and the gender gap. Like neoplasms, some part of the Chronic Respiratory disease gap is due to past smoking patterns, so it will likely shrink as smoking rates continue to decline.
 
@@ -265,15 +265,15 @@ The following table shows counterfactual results for the United States.
 
 The table is sorted by importance, which indicates in general how effective it is to reduce a particular gap. The counterfactual results (the "Change in LE gap" column) indicate how much reducing that gap would specifically affect the life expectancy gap in the United States, which depends on how far the United States is from the target gap for that indicator.
 
-The results show that reducing the Suicide gap from 17.3 to 4.51 (the level observed in Türkiye) would reduce the predicted life expectancy gap by 0.548 years, the largest single impact. Reducing the Unintentional Injury gap to zero would reduce the LE gap by an additional 0.311 years. Reducing the Alcohol gap from 5.54 to 0.306 (the level observed in Colombia) would reduce the gap by 0.251 years. Reducing the Neoplasms gap to zero would reduce the gap by 0.214 years.
+The results show that reducing the Suicide gap from 17.3 to 4.51 (the level observed in Türkiye) would reduce the predicted life expectancy gap by 0.537 years, the largest single impact. Reducing the Unintentional Injury gap to zero would reduce the LE gap by an additional 0.301 years. Reducing the Alcohol gap from 5.54 to 0.306 (the level observed in Colombia) would reduce the gap by 0.241 years. Reducing the Neoplasms gap to zero would reduce the gap by 0.214 years.
 
 Most indicators show negative changes (gap-closing effects), but a few show positive changes (gap-widening effects). The positive changes occur when reducing a gap predictor would increase the life expectancy gap, which can happen when the relationship between predictors and the outcome is complex due to correlations among indicators.
 
 When we sum the effects across all indicators, we can see the total potential impact:
 
-- **Gap-closing indicators** (negative changes): The sum of all indicators that would reduce the life expectancy gap includes Suicide (-0.548), Unintentional Injury (-0.311), Alcohol (-0.251), Neoplasms (-0.214), Liver Disease (-0.198), Homicide (-0.083), and Road Traffic (-0.12).
+- **Gap-closing indicators** (negative changes): The sum of all indicators that would reduce the life expectancy gap includes Suicide (-0.537), Unintentional Injury (-0.301), Alcohol (-0.241), Neoplasms (-0.214), Liver Disease (-0.203), Road Traffic (-0.156), and Homicide (-0.135), for a total reduction of **-1.79 years**.
 
-- **Gap-widening indicators** (positive changes): The sum of all indicators that would increase the life expectancy gap includes Diabetes (+0.427) and Chronic Respiratory disease (+0.053).
+- **Gap-widening indicators** (positive changes): The sum of all indicators that would increase the life expectancy gap includes Diabetes (+0.432) and Chronic Respiratory disease (+0.057), for a total increase of **+0.49 years**.
 
 The net effect of closing all gaps to their target levels would be a reduction in the predicted life expectancy gap. This represents a substantial part of the current gap.
 
@@ -292,7 +292,7 @@ The following table shows how many predictors each model uses:
 
 ```{include} tables/feature_selection_summary_hale.html
 ```
-Elastic Net selects 20 out of 23 predictors as having non-zero coefficients.
+Elastic Net selects 20 out of 22 predictors as having non-zero coefficients.
 The following figure shows all predictors with non-zero coefficients by importance:
 
 ```{figure} figs/predictor_importance_hale.png
@@ -303,7 +303,7 @@ alt: Predictors by importance for HALE gap
 Predictors by importance.
 ```
 
-The Neoplasms gap is the most important predictor, with an importance of 12.1. The Neoplasms overall rate is next, with an importance of 11.7.
+The Neoplasms overall rate is the most important predictor, with an importance of 15.3. The Neoplasms gap is next, with an importance of 12.8.
 
 When we aggregate importance by indicator (combining Mid and Gap predictors), we can see which health indicators matter most overall:
 
@@ -324,9 +324,9 @@ The top indicators are:
 
 1. **Neoplasms** (total importance: 28.2) — Cancer is the dominant factor for HALE, with contributions from both the overall rate and the gender gap. Some part of the neoplasms gap is due to past smoking patterns, as men historically smoked more than women. Neoplasms gained importance after removing the childhood mortality indicator, suggesting it better captures its relationship with the HALE gap without that indicator.
 
-2. **Cardiovascular disease** (total importance: 5.55) — Cardiovascular disease is the second most important factor, with contributions from both the overall rate and the gender gap. In many countries, cardiovascular disease rates are higher for women because cardiovascular risk increases with age, and women are more likely to live long enough to develop cardiovascular disease. Cardiovascular importance decreased after removing childhood mortality, suggesting some interaction between these indicators.
+2. **Unintentional Injury** (total importance: 5.69) — Unintentional injuries are the second most important factor, with contributions from both the overall rate and the gender gap. These injuries often show gender differences due to occupational exposures, risk-taking behaviors, and activity patterns.
 
-3. **Unintentional Injury** (total importance: 5.69) — Unintentional injuries contribute substantially, with contributions from both the overall rate and the gender gap. These injuries often show gender differences due to occupational exposures, risk-taking behaviors, and activity patterns.
+3. **Cardiovascular disease** (total importance: 5.55) — Cardiovascular disease is the third most important factor, with contributions from both the overall rate and the gender gap. In many countries, cardiovascular disease rates are higher for women because cardiovascular risk increases with age, and women are more likely to live long enough to develop cardiovascular disease. Cardiovascular importance decreased after removing childhood mortality, suggesting some interaction between these indicators.
 
 4. **Chronic Respiratory disease** (total importance: 5.22) — Chronic respiratory disease contributes substantially, with contributions from both the overall rate and the gender gap. Like neoplasms, some part of the Chronic Respiratory disease gap is due to past smoking patterns.
 
@@ -362,7 +362,7 @@ The model shows good fit with no obvious systematic patterns in the residuals.
 
 #### Comparison with Ordinary Least Squares
 
-For comparison, we also fit an ordinary least squares (OLS) model using only the 19 predictors selected by Elastic Net. The following table compares performance:
+For comparison, we also fit an ordinary least squares (OLS) model using only the 20 predictors selected by Elastic Net. The following table compares performance:
 
 ```{include} tables/performance_comparison_hale.html
 ```
@@ -381,15 +381,15 @@ The following table shows counterfactual results for the United States.
 
 The table is sorted by importance, which indicates in general how effective it is to reduce a particular gap. The counterfactual results (the "Change in HALE gap" column) indicate how much reducing that gap would specifically affect the HALE gap in the United States, which depends on how far the United States is from the target gap for that indicator.
 
-The results show that reducing the Suicide gap from 17.3 to 4.51 (the level observed in Türkiye) would reduce the predicted HALE gap by 0.76 years, the largest single impact. Reducing the Neoplasms gap to zero would reduce the HALE gap by an additional 0.256 years. Reducing the Alcohol gap from 5.54 to 0.306 (the level observed in Colombia) would reduce the gap by 0.272 years. Reducing the Homicide gap to zero would reduce the gap by 0.218 years.
+The results show that reducing the Suicide gap from 17.3 to 4.51 (the level observed in Türkiye) would reduce the predicted HALE gap by 0.801 years, the largest single impact. Reducing the Neoplasms gap to zero would reduce the HALE gap by an additional 0.28 years. Reducing the Alcohol gap from 5.54 to 0.306 (the level observed in Colombia) would reduce the gap by 0.273 years. Reducing the Homicide gap to zero would reduce the gap by 0.281 years.
 
 Most indicators show negative changes (gap-closing effects), but a few show positive changes (gap-widening effects). The positive changes occur when reducing a gap predictor would increase the HALE gap, which can happen when the relationship between predictors and the outcome is complex due to correlations among indicators.
 
 When we sum the effects across all indicators, we can see the total potential impact:
 
-- **Gap-closing indicators** (negative changes): The sum of all indicators that would reduce the HALE gap includes Suicide (-0.76), Neoplasms (-0.256), Alcohol (-0.272), Homicide (-0.218), Liver Disease (-0.189), Road Traffic (-0.167), Drug Disorder (-0.142), and Unintentional Injury (-0.082).
+- **Gap-closing indicators** (negative changes): The sum of all indicators that would reduce the HALE gap includes Suicide (-0.801), Neoplasms (-0.28), Alcohol (-0.273), Homicide (-0.281), Liver Disease (-0.205), Drug Disorder (-0.206), Road Traffic (-0.165), and Unintentional Injury (-0.042), for a total reduction of **-2.25 years**.
 
-- **Gap-widening indicators** (positive changes): The sum of all indicators that would increase the HALE gap includes Diabetes (+0.341) and Chronic Respiratory disease (+0.082).
+- **Gap-widening indicators** (positive changes): The sum of all indicators that would increase the HALE gap includes Diabetes (+0.409) and Chronic Respiratory disease (+0.087), for a total increase of **+0.50 years**.
 
 The net effect of closing all gaps to their target levels would be a reduction in the predicted HALE gap. This represents a substantial part of the current gap.
 
@@ -406,8 +406,8 @@ The lower performance for HALE may reflect the additional complexity of modeling
 
 Both models select a similar number of predictors:
 
-- **Life Expectancy**: 13 out of 23 predictors (57%)
-- **HALE**: 20 out of 23 predictors (87%)
+- **Life Expectancy**: 13 out of 22 predictors (59%)
+- **HALE**: 20 out of 22 predictors (91%)
 
 The HALE model uses more predictors, suggesting that more factors are relevant for explaining healthy life expectancy than overall life expectancy.
 
