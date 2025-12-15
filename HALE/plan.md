@@ -943,47 +943,57 @@ A comprehensive validation process was completed, replacing indicators one at a 
 - Create a loop or function to process all time points systematically
 - Document which countries are included at each time point (coverage may vary)
 
-**Step 9.4: Fit Models for Each Time Point** ⚠️ **TO DO**
+**Step 9.4: Fit Models for Each Time Point** ✅ **COMPLETED**
 
-**For each time point**:
-- Fit Elastic Net models (same methodology as Phase 3) for both HALE gap and Life Expectancy gap
-- Use same cross-validation approach (5-fold CV) for model selection
-- Extract coefficients and calculate feature importance for each time point
-- Calculate model performance metrics (R², MAE, RMSE) for each time point
+**Completed Work**:
+- Modified `eda.md`, `model_le.md`, and `model_hale.md` to accept a `cutoff_year` parameter
+- Updated all output filenames (HTML tables, figures, HDF5 data files) to include the cutoff year
+- Fit Elastic Net models for multiple cutoff years: 2019, 2015, 2010, 2005, 2000
+- Used same cross-validation approach (5-fold CV) for model selection at each time point
+- Extracted coefficients and calculated feature importance for each cutoff year
+- Calculated model performance metrics (R², MAE) for each cutoff year
+- Generated output files with cutoff year in filenames to enable temporal comparison
 
-**Implementation**:
-- Create a function or loop to fit models for all time points
-- Store model results in a structured format (e.g., dictionary with time point as key)
-- Compare model performance across time points
-- Identify which predictors are consistently important vs. time-varying
+**Implementation Details**:
+- Each analysis uses the most recent year of data available for each country up to the cutoff year
+- Model results stored in separate output files for each cutoff year (e.g., `model_comparison_le_2019.html`, `indicator_importance_hale_2015.html`)
+- All analyses exclude 2020+ data to avoid COVID-19 pandemic distortions
+- Results enable comparison of model performance, feature importance, and counterfactual effects across time periods
 
-**Step 9.5: Analyze Temporal Changes** ⚠️ **TO DO**
+**Step 9.5: Analyze Temporal Changes** ✅ **COMPLETED**
 
-**Key Analyses**:
-1. **Target Variable Trends**: 
-   - Plot HALE gap and Life Expectancy gap over time (by country and average)
-   - Identify countries where gap is narrowing vs. widening
-   - Calculate average gap change per decade
+**Completed Work**:
+- Created `temporal.md` document to summarize and compare results across different cutoff years
+- Documented results chronologically (2000 → 2005 → 2010 → 2015 → 2019) to show evolution over time
+- Reframed analysis to focus on understanding how health patterns have changed over time, rather than choosing a cutoff year
 
-2. **Predictor Trends**:
-   - Plot predictor values (rates and gaps) over time for each indicator
-   - Identify which predictors have changed most over time
-   - Compare male vs. female trends for each indicator
+**Key Analyses Completed**:
 
-3. **Model Coefficient Trends**:
-   - Plot coefficient values over time for each predictor
-   - Identify which predictors have become more/less important over time
-   - Calculate correlation between predictor trends and gap trends
+1. **Feature Importance Trends**:
+   - Documented how indicator importance has changed from 2000 to 2019
+   - Identified major shifts: rise of Neoplasms (280% increase in HALE model), decline of Cardiovascular (64% decrease in HALE model)
+   - Compared HALE vs. Life Expectancy importance trends across time periods
+   - Identified which indicators have gained or lost importance over two decades
 
-4. **Feature Importance Trends**:
-   - Plot feature importance rankings over time
-   - Identify which indicators have gained or lost importance
-   - Compare HALE vs. Life Expectancy importance trends
+2. **Model Performance Trends**:
+   - Compared R² and MAE metrics across cutoff years (2000, 2005, 2010, 2015, 2019)
+   - Documented how model performance varies with different time periods
+   - Assessed whether models explain more or less variance over time
 
-5. **Model Performance Trends**:
-   - Compare R² and other performance metrics across time points
-   - Assess whether the model explains more or less variance over time
-   - Identify time periods where model performance changes significantly
+3. **Counterfactual Analysis Trends**:
+   - Documented how counterfactual effects have evolved over time
+   - Identified shifting intervention priorities (e.g., Suicide prevention becoming top priority)
+   - Tracked net gap reduction potential over time (increased from -0.858 to -1.298 years for LE, -0.986 to -1.755 years for HALE)
+
+4. **Temporal Evolution Interpretation**:
+   - Interpreted changes as real health pattern evolution, not just modeling artifacts
+   - Identified what changes indicate about health evolution (e.g., cancer becoming dominant, cardiovascular improvements)
+   - Provided policy implications based on temporal trends
+
+**Documentation**:
+- Results organized chronologically with "Changes from Previous Period" sections
+- Comprehensive summary section interpreting temporal evolution of health patterns
+- Focus on understanding how health indicators and their relationships to gender gaps have evolved over two decades
 
 **Step 9.6: Document Temporal Findings** ⚠️ **TO DO**
 
@@ -1012,49 +1022,316 @@ A comprehensive validation process was completed, replacing indicators one at a 
 - Assessment of whether policy interventions have been effective
 - Comparison of HALE vs. Life Expectancy gap trends
 
-### Implementation Notes
+**Step 9.7: Create Trends Visualization Notebook** ✅ **COMPLETED**
 
-- **Primary Tools**: scikit-learn for model fitting (`Ridge`, `Lasso`, `ElasticNet`, `GridSearchCV`, `StandardScaler`)
-- **Secondary Tools**: statsmodels for diagnostics if needed
-- **Data Sources**: 
-  - **WHO Global Health Observatory (GHO) API**: Use `who_data.py` for downloading WHO indicators via the GHO OData API (https://www.who.int/data/gho/info/gho-odata-api). Provides access to HALE, Life Expectancy, and various cause-specific mortality indicators.
-  - **IHME Global Burden of Disease**: Data downloaded from IHME GBD Compare (https://vizhub.healthdata.org/gbd-compare/) as CSV files with separate male and female files. IHME data is used for indicators where it provides better temporal coverage than WHO (e.g., cardiovascular disease, diabetes, chronic respiratory disease, neoplasms, drug use disorders, unintentional injuries). The `load_ihme_indicator()` function in `eda.md` converts IHME format to WHO-compatible format for consistency.
-- **Country Codes**: Use `oecd_codes` from `utils.py` for OECD country filtering
-- **Target Variable**: HALE gap = Female HALE - Male HALE (difference, not ratio)
-- **Focus**: Direct causal indicators only (mortality/health indicators), not indirect indicators like GDP
+**Purpose**:
+Create a dedicated notebook that visualizes trends over time using all available temporal data. This notebook will provide comprehensive time series visualizations of how health indicators, gender gaps, and model results have evolved across the analysis period.
+
+**Notebook Structure**:
+- ✅ Create new notebook `time_series.md` 
+- ✅ Load temporal data directly from source data files
+- ✅ Create comprehensive time series plots for all indicators and outcomes that are used in the model (mid and gap)
+
+**Visualizations to Include**:
+
+1. **Target Variable Trends**:
+   - ✅ Time series plots of HALE gap and Life Expectancy gap over time (by country and OECD average)
+   - ✅ Time series plots of HALE and Life Expectancy values over time (by country and OECD average)
+   - ✅ Multi-panel plots showing gap trends for selected countries
+   - ✅ Tables showing value and gap changes from 2000 to 2019 for each country
+   - ✅ Summary tables with superlatives (highest/lowest values and slopes)
+
+2. **Indicator Trends**:
+   - ✅ Time series plots for each indicator showing:
+     - Overall rates (Mid values) over time
+     - Gender gaps (Gap values) over time
+   - ✅ Summary tables with superlatives for each indicator (highest/lowest means and slopes)
+
+**Deliverables**:
+- ✅ Notebook: `md/time_series.md` with all visualizations and analysis
+- ✅ Report: `jb/time_series_report.md` explaining methodology and summarizing results
+- ✅ All figures saved to `jb/figs/`
+- ✅ All tables saved to `jb/tables/`
+- ✅ Report integrated into JupyterBook site (`myst.yml` and `index.md` updated)
+
+### Phase 10: Panel Data Modeling (In Progress)
+
+**Overview:**
+Extend the analysis to leverage both temporal variation (2000-2019) and cross-country variation simultaneously. This panel data approach will provide more statistical power and allow us to model how relationships between indicators and gender gaps evolve over time, while accounting for country-specific characteristics.
+
+**Context:**
+We now have:
+- A fully validated cross-sectional model for 2019 (and earlier cutoff years)
+- Temporal analysis notebooks (Phase 9)
+- Indicators harmonized onto IHME definitions
+- A clear understanding of how indicator importance changes over time
+
+**Primary Goal:**
+Determine whether the same predictors that matter cross-sectionally also matter within countries over time. Specifically:
+- Does alcohol matter because countries differ from each other, or because countries that reduce alcohol mortality see their gaps narrow?
+- Do predictors (e.g., cardiovascular mortality) predict gaps within a country over time?
+
+**Recommended Approach:**
+Implement a **Bayesian hierarchical model with country-level random intercepts and shared slopes** as the primary next step. This approach:
+- Uses both within-country and between-country variation (unlike fixed effects)
+- Controls for time-invariant country-level factors (culture, baseline health systems, risk environments)
+- Retains interpretability of coefficients (β has clear meaning across countries)
+- Preserves ability to run counterfactuals in a fully Bayesian framework
+- Handles unbalanced data naturally
+- Does not require large within-country variation (unlike fixed-effects models)
+- Avoids overcomplication of random slopes (which require more data per country than available)
+
+**Step 10.1: Data Preparation for Panel Analysis**
+
+**Data Structure:**
+- Transform from country-level (one row per country) to panel structure (one row per country-year)
+- Include all years 2000-2019 for each country
+- Maintain predictor variables (Mid and Gap columns) for each country-year
+- Maintain target variables (HALE gap and Life Expectancy gap) for each country-year
+- **Note**: There is no missing data in the panel dataset
+
+**Implementation:**
+- Make a version of the `summarize_gap()` function that returns all years (not just most recent)
+- Create panel dataset with MultiIndex (Country, Year) or long format (Country, Year as columns)
+- Columns needed:
+  - `HALE_gap` (or `LE_gap`) - target variable
+  - All predictors (Mid + Gap columns)
+  - `Country` - country code
+  - `Year` - year (2000-2019)
+- Save panel dataset to HDF5 file for modeling notebooks
+
+**Standardization Strategy:**
+
+**1. Predictors (Standardize - Full Z-Scores):**
+- For each predictor `X_j` (both Mid and Gap versions):
+  - Compute mean `X̄_j` and standard deviation `s_j` across **all country-year observations** in the panel (OECD, 2000-2019)
+  - Transform to z-scores: `X*_{ijt} = (X_{ijt} - X̄_j) / s_j`
+- **Important**: 
+  - Do **not** standardize within country or within year
+  - Use a **single global transformation** for the entire panel (2000-2019)
+  - This preserves genuine level differences between countries and across time, which are part of the signal
+- **Benefits**:
+  - Priors are coherent: `β_j ~ N(0, 1)` means "1-SD change in predictor → ~1 year change in gap"
+  - Coefficients are directly comparable across predictors
+  - Indicator-level importance is straightforward: `|β_j|` in standardized space
+  - Consistent with cross-sectional Elastic Net approach (time-extended version)
+
+**2. Targets (Center Only, Do Not Scale):**
+- For HALE_gap and LE_gap separately:
+  - Compute global mean across all country-years: `ȳ = mean(y_{it})`
+  - Center (but do not scale): `y*_{it} = y_{it} - ȳ`
+  - Keep units in **years** (not standardized)
+- **Why center but not scale**:
+  - **Interpretability**: Effects remain in "years" (e.g., "1-SD reduction in alcohol → 0.6-year reduction in gap")
+  - **Numerical behavior**: Gap scale is modest (0-8 years), no scaling needed for numerical stability
+  - **Priors**: With standardized predictors and unscaled (centered) target:
+    - `β_j ~ N(0, 1)` is sensible: most effects within ±2 years per 1-SD change
+    - `σ ~ HalfNormal(1)` reflects ~1 year unexplained variation
+  - If scaled, would need to rescale priors to SD-of-gap scale (less transparent)
+- **Predictions**: When converting back to original scale, add `ȳ` back: `ŷ_{it} = ŷ*_{it} + ȳ`
 
 
+**Step 10.2: Recommended Model Specification (First Implementation)**
 
-## Results
+**Model Structure:**
+Bayesian hierarchical model with country-level random intercepts and shared slopes (no random slopes initially).
 
-### Model 1: Elastic Net Regression for Life Expectancy Gap (OECD Countries, Pre-COVID Data)
+**Notation:**
+- `y_{it}` = HALE gap (or LE gap) for country i in year t (centered: `y*_{it} = y_{it} - ȳ`)
+- `X*_{it}` = vector of standardized predictors (Mid + Gap columns, z-scores across full panel)
+- `α_i` = country-specific random intercept
+- `β` = shared slope coefficients (same across all countries)
+- `t` ∈ 2000–2019
 
-**Model Summary:**
+**Model:**
+```
+y*_{it} ~ N(α_i + X*_{it}β, σ)
+α_i ~ N(0, σ_α)
+```
 
-This first iteration of the Life Expectancy gender gap model (in `model2.md`) uses Elastic Net regression with cross-validation on OECD countries using pre-COVID data (2000-2019). The model includes 12 health indicators with Mid and Gap columns as predictors (Mid + Gap format, not separate Male/Female columns), plus 1 female-only indicator for maternal mortality.
+**Priors:**
+- `β ~ N(0, 1)` - Regularizing prior on coefficients (1-SD change in predictor → ~1 year change in gap)
+- `α_i ~ N(0, σ_α)` - Country intercepts centered at zero (since target is centered)
+- `σ_α ~ HalfNormal(1)` - Prior on between-country intercept variation
+- `σ ~ HalfNormal(1)` - Prior on residual standard deviation (~1 year unexplained variation)
 
-**Data:**
-- **Countries**: OECD countries with complete data (complete-case analysis)
-- **Time Period**: Most recent available year per country/indicator (2000-2019, excluding 2020+ to avoid COVID-19 distortions)
-- **Target Variable**: Life Expectancy gap = Female LE - Male LE (in years) - **Note**: `model2.md` analyzes Life Expectancy gap, not HALE gap
-- **Predictors**: Age-standardized mortality/health indicators in Mid + Gap format:
-  - Cardiovascular disease death rates
-  - Chronic respiratory disease death rates
-  - Suicide rates
-  - Alcohol-attributable death rates
-  - Poisoning rates
-  - Road traffic death rates
-  - Homicide rates
-  - Maternal mortality ratio (female-only)
-  - Under-five mortality rate
-  - Diabetes death rates
-  - Drug use disorder death rates
-  - Unintentional injuries death rates
+**Why This Model:**
+1. **Answers the primary scientific question**: Does alcohol matter because countries differ from each other, or because countries that reduce alcohol mortality see their gaps narrow? This model can answer both.
+2. **Seamlessly extends the cross-sectional Elastic Net model**: Provides posterior distributions for β instead of penalized point estimates, with natural interpretation as global "effect size" averaged over space and time, and shrinkage through hierarchical priors (like Bayesian ridge regression).
+3. **Preserves counterfactual framework**: Produces posterior predictive distributions for country-level counterfactuals, changes through time, and uncertainty bands for temporal counterfactuals.
+4. **Computationally feasible**: With ≈ 38 countries × 20 years ≈ 760 observations, a hierarchical linear model with 12–18 predictors runs well in PyMC. No need for variational inference yet, and parallel chains are reasonable on commodity hardware.
 
-**Model Performance:**
-- Model selected via 5-fold cross-validation with GridSearchCV
-- Elastic Net chosen as primary model (combines Ridge and Lasso regularization)
-- Cross-validation R² and RMSE calculated for model comparison
+**Why Not Fixed Effects:**
+- Fixed-effects models eliminate all between-country variation, which we know is large and informative
+- Uses only within-country variation (changes over time), discarding valuable cross-country information
+
+**Why Not Random Slopes (Initially):**
+- Random slopes require much more data per country than available (≈20 years × OECD ≈ 38 countries)
+- Estimating slope variance would be unstable and will obscure interpretation
+- Can be added later if needed (see Step 10.4)
+
+**Step 10.3: Implementation in PyMC**
+
+**Software:**
+- Use `PyMC` (Python) for Bayesian inference
+- Leverage existing PyMC experience from cross-sectional analysis
+
+**Implementation Steps:**
+1. Load panel dataset (country-year structure)
+2. **Standardize predictors**:
+   - For each predictor (Mid and Gap columns):
+     - Compute mean and SD across all country-year observations
+     - Transform to z-scores: `X*_{ijt} = (X_{ijt} - X̄_j) / s_j`
+     - Store transformation parameters (mean, SD) for later use in counterfactuals
+   - Use single global transformation for entire panel (2000-2019)
+3. **Center targets**:
+   - For HALE_gap (or LE_gap):
+     - Compute global mean: `ȳ = mean(y_{it})` across all country-years
+     - Center: `y*_{it} = y_{it} - ȳ`
+     - Store `ȳ` for converting predictions back to original scale
+4. Set up PyMC model with:
+   - Country index for random intercepts
+   - Shared slope coefficients for all standardized predictors
+   - Priors as specified above (β ~ N(0, 1), α_i ~ N(0, σ_α), etc.)
+5. Run MCMC sampling (4 chains, appropriate number of draws)
+6. Check convergence diagnostics (R-hat, effective sample size)
+7. Extract posterior distributions for all parameters
+8. **Convert predictions back to original scale**:
+   - For predictions: `ŷ_{it} = ŷ*_{it} + ȳ`
+   - For counterfactuals: apply inverse standardization to predictors, then add `ȳ` to predictions
+
+**Computational Considerations:**
+- With ≈ 760 observations and 12–18 predictors, model should run efficiently
+- Use parallel chains for faster sampling
+- Monitor sampling efficiency and adjust if needed
+- No missing data handling needed (complete panel)
+
+**Step 10.4: Model Extensions (Future Iterations)**
+
+After implementing the basic random-intercept model, consider these extensions:
+
+**(A) Predictor Selection Based on Correlations:**
+- **Status**: Identified in posterior correlation analysis
+- **Problem**: Very high negative correlations (r ≈ -0.9 to -1.0) between Mid and Gap predictors for same indicators (Homicide, Alcohol, Liver Disease, Road Traffic, Suicide)
+- **Approach**:
+  1. Compute fit metrics (WAIC, LOO-CV) for current full model
+  2. Test series of reduced models by removing Mid predictors where Mid-Gap correlation > 0.9
+  3. Compare models using WAIC/LOO differences, posterior predictive checks, coefficient stability
+- **Rationale**: If removing Mid predictors doesn't worsen fit, it suggests Gap predictors capture relevant information and simplifies model interpretation
+
+**(B) Year Fixed Effects:**
+- Add `γ_t` to model: `y*_{it} = α_i + γ_t + X*_{it}β + ε_{it}`
+- Controls for global temporal trends (e.g., global health improvements affecting all countries)
+- Test whether this improves model fit (WAIC/LOO comparison)
+
+**(C) AR(1) Structure:**
+- Add autoregressive structure on residuals or intercepts
+- Models temporal autocorrelation (year-to-year persistence)
+- May improve predictions if residuals are correlated over time
+
+**(D) Random Slopes:**
+- Allow coefficients to vary by country: `β_i ~ N(μ_β, σ_β)`
+- Test whether random slopes improve WAIC/LOO
+- Only add if there is sufficient evidence that relationships vary by country
+
+**Decision Framework:**
+- Compare models using WAIC or LOO cross-validation
+- Add extensions only if they meaningfully improve model fit or provide substantive insights
+- Avoid overcomplicating the model without clear benefit
+
+**Step 10.5: Comparison with Cross-Sectional Model**
+
+**Key Comparisons:**
+1. **Coefficient Estimates**: Compare posterior means of β to Elastic Net coefficients
+   - Which predictors survive in a temporal context?
+   - Do effect sizes shrink or expand?
+   - Do importance patterns shift?
+
+2. **Feature Importance**: Compare indicator importance rankings
+   - Which indicators are more/less important in panel vs. cross-sectional model?
+   - Does temporal variation change which factors matter most?
+
+3. **Uncertainty Quantification**: Compare credible intervals (Bayesian) to confidence intervals (Elastic Net)
+   - How does uncertainty change with more data?
+   - Are relationships more or less certain in panel model?
+
+4. **Model Performance**: Compare R², RMSE, cross-validation scores
+   - Does panel model explain more variance?
+   - How does predictive performance compare?
+
+**Interpretation:**
+- Discuss which predictors are robust across both modeling approaches
+- Identify predictors that matter more in temporal vs. cross-sectional context
+- Explain differences in importance patterns between models
+
+**Step 10.6: Deliverables (Recommended Sequence)**
+
+**Deliverable 1 (High Priority):**
+- ✅ Implement Bayesian random-intercept model in PyMC
+- ✅ Implemented for both HALE gap and Life Expectancy gap
+- ✅ Created notebook: `md/bayesian_model.md`
+- ✅ Used `prepare_panel_data()` function to standardize predictors and center targets
+- ✅ Used `build_random_intercept_panel_model()` function with proper PyMC structure:
+  - `pm.Data` objects for explicit dependency graph
+  - `pm.Deterministic` for `mu` (linear predictor)
+  - `nuts_sampler='nutpie'` for efficient MCMC sampling
+
+**Deliverable 2:**
+- ✅ Report posterior means and credible intervals for β (predictor coefficients)
+- ✅ Report posterior for α (country-specific intercepts)
+- ✅ Report posterior for σ_α (degree of between-country heterogeneity)
+- ✅ Create visualizations of posterior distributions:
+  - Forest plots for β coefficients (`posterior_forest_beta_hale.png`, `posterior_forest_beta_le.png`)
+  - Forest plots for α intercepts (`posterior_forest_alpha_hale.png`, `posterior_forest_alpha_le.png`)
+- ✅ Export results to HTML tables:
+  - `tables/beta_coefficients_hale.html`, `tables/beta_coefficients_le.html`
+  - `tables/alpha_coefficients_hale.html`, `tables/alpha_coefficients_le.html`
+- ⏳ Posterior predictive checks (PPCs) - Not yet implemented
+
+**Deliverable 3:**
+- ✅ Export Elastic Net coefficients from cross-sectional models:
+  - Modified `model_hale.md` and `model_le.md` to save coefficients to CSV
+  - Files: `data/elasticnet_coefficients_hale_2019.csv`, `data/elasticnet_coefficients_le_2019.csv`
+- ✅ Compare coefficients to cross-sectional Elastic Net model:
+  - Load Elastic Net coefficients in Bayesian model notebook
+  - Create comparison visualizations showing posterior distributions vs. Elastic Net point estimates
+  - Figures: `figs/bayesian_elasticnet_comparison_hale.png`, `figs/bayesian_elasticnet_comparison_le.png`
+- ✅ Compute and analyze posterior correlations:
+  - Top 10 correlations among β coefficients (predictor slopes)
+  - Top 10 correlations among α coefficients (country intercepts)
+  - Export to HTML: `tables/beta_correlations_top10_hale.html`, `tables/alpha_correlations_top10_hale.html`, etc.
+- ✅ Document findings in report:
+  - Which predictors survive in a temporal context
+  - Whether effect sizes shrink or expand
+  - Whether importance patterns shift
+  - Interpretation of posterior correlations
+
+**Deliverable 4:**
+- ⏳ Extend counterfactual analysis:
+  - Predict effect of reducing alcohol mortality in a given country in a given year
+  - Predict effect of long-term trends (e.g., gradual reduction over 10 years)
+  - Provide uncertainty bands for temporal counterfactuals
+- ⏳ Export counterfactual results: `counterfactuals_panel_usa_hale.html`
+
+**Deliverable 5:**
+- ✅ Integrate panel model results into JupyterBook site
+- ✅ Created comprehensive report: `jb/bayesian_model_report.md`
+- ✅ Document model specification, priors, and interpretation
+- ✅ Include comparison with cross-sectional model
+- ✅ Include posterior correlation analysis and interpretation
+- ✅ Updated JupyterBook configuration (`myst.yml`) and index (`index.md`) to include report
+- ⏳ Include counterfactual analysis results (pending Deliverable 4)
+
+**Future Work (After Initial Implementation):**
+- ✅ Implemented same model for Life Expectancy gap
+- ⏳ Compute model fit metrics (WAIC, LOO-CV) for current full model
+- ⏳ Test reduced models by removing Mid predictors where Mid-Gap correlation > 0.9:
+  - Remove Mid_Homicide, Mid_Alcohol, Mid_LiverDisease, Mid_RoadTraffic, Mid_Suicide
+  - Compare fit metrics to determine if simplification improves model
+- ⏳ Test model extensions (year fixed effects, AR(1), random slopes)
+- ⏳ Posterior predictive checks
+- ⏳ Counterfactual analysis with uncertainty quantification
+
 
 
 

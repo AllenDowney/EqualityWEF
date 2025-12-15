@@ -18,6 +18,8 @@ This project explores differences in life expectancy and health-adjusted life ex
 
 - [Temporal Analysis](temporal.md) - Evolution of health patterns and gender gaps over time (2000-2019). Runs predictive models at five-year intervals (2000, 2005, 2010, 2015, 2019) and compares results to examine how indicator importance and intervention opportunities have changed.
 
+- [Bayesian Panel Data Model](bayesian_model_report.md) - Bayesian hierarchical panel model analyzing HALE and Life Expectancy gender gaps using both temporal variation (2000-2019) and cross-country variation simultaneously. Provides posterior distributions for all parameters and enables temporal counterfactual analysis.
+
 ## Methodology
 
 We use Elastic Net regression to model the gender gap in life expectancy and HALE as a function of cause-specific mortality indicators. This approach handles the high correlation among predictors and identifies which patterns of mortality are most strongly associated with the life expectancy gap.
