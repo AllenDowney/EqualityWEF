@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="http://localhost:3022/sitemap_style.xsl" ?>
+<?xml-stylesheet type="text/xsl" href="http://localhost:3023/sitemap_style.xsl" ?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>http://localhost:3022</loc>
+    <loc>http://localhost:3023</loc>
   </url>
   <url>
-    <loc>http://localhost:3022/tech-report</loc>
+    <loc>http://localhost:3023/tech-report</loc>
   </url>
   <url>
-    <loc>http://localhost:3022/data-inventory</loc>
+    <loc>http://localhost:3023/data-inventory</loc>
   </url>
   <url>
-    <loc>http://localhost:3022/neoplasms-report</loc>
+    <loc>http://localhost:3023/neoplasms-report</loc>
   </url>
   <url>
-    <loc>http://localhost:3022/eda</loc>
+    <loc>http://localhost:3023/eda</loc>
   </url>
   <url>
-    <loc>http://localhost:3022/validation</loc>
+    <loc>http://localhost:3023/validation</loc>
   </url>
   <url>
-    <loc>http://localhost:3022/time-series-report</loc>
+    <loc>http://localhost:3023/time-series-report</loc>
   </url>
   <url>
-    <loc>http://localhost:3022/temporal</loc>
+    <loc>http://localhost:3023/temporal</loc>
   </url>
   <url>
-    <loc>http://localhost:3022/bayesian-model-report</loc>
+    <loc>http://localhost:3023/bayesian-model-report</loc>
   </url>
 </urlset>
