@@ -165,13 +165,95 @@ The following table shows the posterior distributions of predictor coefficients.
 - **Gap_UnintentionalInjury** (β = 0.149, 94% HDI: [0.07, 0.232]): Gender gaps in unintentional injury mortality contribute to HALE gaps, though with substantial uncertainty (HDI includes values near zero).
 
 **Negative Effects** (larger gender gaps in predictor → smaller HALE gap):
-- **Gap_Cardiovascular** (β = -0.247, 94% HDI: [-0.292, -0.196]): This negative coefficient is notable. Countries with larger male-female gaps in cardiovascular mortality (where men have higher rates) actually have *smaller* gender gaps in HALE. This may reflect that cardiovascular disease affects both genders substantially, and the gap in cardiovascular mortality may be offset by other factors.
-- **Gap_Diabetes** (β = -0.108, 94% HDI: [-0.148, -0.065]): Similar to cardiovascular disease, gender gaps in diabetes mortality are associated with smaller HALE gaps.
+- **Gap_Cardiovascular** (β = -0.247, 94% HDI: [-0.292, -0.196]): This negative coefficient reflects a **competing risks** or **"risk of last resort"** mechanism. 
+
+  **Sign conventions:**
+  - HALE gap = Female - Male (positive means women live longer)
+  - Gap_Cardiovascular = Male - Female for cardiovascular mortality (positive means men have higher risk)
+  
+  **What the negative coefficient means:**
+  As Gap_Cardiovascular increases (men's CVD risk rises relative to women's), the female-male HALE gap tends to be smaller. Equivalently, in countries/years where the HALE gap is large (women doing especially well), Gap_Cardiovascular is typically small or even negative (women's CVD risk is closer to, or higher than, men's).
+  
+  **The "risk of last resort" mechanism:**
+  Cardiovascular disease primarily affects people who have already survived many other causes of death. In settings where women's overall health is relatively good:
+  - Women avoid or survive many other causes (maternal causes, infections, violence, etc.)
+  - They live to older ages and are more exposed to late-life CVD
+  - As a result, Gap_Cardiovascular tends to shrink or even flip sign (women's CVD risk approaches or exceeds men's)
+  - At the same time, the HALE gap is large, because women enjoy advantages across many causes
+  
+  In settings where women's health is relatively worse:
+  - Women face substantial risks from earlier-life causes (e.g., maternal mortality, poor access to care)
+  - Fewer women survive to the ages where CVD dominates
+  - Men still accumulate substantial CVD risk at older ages
+  - So Gap_Cardiovascular tends to be large and positive (men much worse off for CVD)
+  - But the HALE gap is smaller, because women lose more years to other causes
+  
+  **The pattern:** Large female-male HALE gaps tend to occur where the male-female CVD gap is small or negative. Large male-female CVD gaps tend to occur where women's overall advantage is weaker. This pattern produces the negative regression coefficient.
+
+- **Gap_Diabetes** (β = -0.108, 94% HDI: [-0.148, -0.065]): Similar to cardiovascular disease, diabetes may also follow a competing risks pattern, though the effect is smaller. When women's health is good overall, more survive to die of diabetes, making the gap smaller and the overall HALE gap larger.
 
 **Interpretation:**
 - All coefficients have 94% HDIs that exclude zero, indicating robust effects.
-- The model explains gender gaps in HALE primarily through external causes (road traffic, suicide, homicide) and neoplasms, with cardiovascular and diabetes showing protective effects (narrowing the gap).
+- The model explains gender gaps in HALE primarily through external causes (road traffic, suicide, homicide) and neoplasms.
+- Cardiovascular and diabetes show negative coefficients, reflecting a **competing risks** mechanism: cardiovascular disease and diabetes are "risks of last resort" that primarily affect people who have survived other causes. When women's health is good overall, they survive other causes and live to older ages where CVD/diabetes dominate, making these gaps smaller and the overall HALE gap larger. When these gaps are large (positive), it indicates women are dying of other causes first, signaling worse overall health and a smaller HALE gap.
 - The standardized coefficients allow direct comparison: a 1-SD increase in Gap_RoadTraffic is associated with a 0.464-year increase in the HALE gap.
+
+
+### Predictor Importance on the Original Scale
+
+Standardized coefficients allow direct comparison of effect sizes, but they do not account for how much each predictor typically varies across countries and years. To capture both effect size and real-world variation, we compute an **importance measure**:
+
+**Importance = |β_standardized| × SD_original**
+
+This quantity is **not** a causal effect or a prediction. Instead, it reflects how much a predictor can contribute to **explaining variation** in gender gaps given the amount of variation that predictor exhibits in the data.
+
+#### How to interpret the importance values
+
+- A predictor with a large effect but little variation will have modest importance.  
+- A predictor with moderate effect but large variation will have large importance.  
+- The measure ranks predictors by their contribution to **explaining differences** in gaps across countries and time.
+
+#### Why the units appear to be in "years" but do not represent an effect
+
+A standardized coefficient of 0.369 means:
+
+- A 1-SD change in the predictor → 0.369-year change in the gap  
+  (this **is** the effect size)
+
+The importance value multiplies this by the predictor’s original-scale SD, producing a number that has the same units (“years”), but:
+
+- It is **not** the effect of any real-world change  
+- It is **not** a counterfactual prediction  
+- It is best viewed as a **scaled contribution measure**, not an effect size
+
+#### Correct interpretation
+
+- Importance scores **rank** predictors by how much they help explain variation in the outcome.  
+- Standardized coefficients provide the **actual effect sizes**.  
+- An importance score of 14.2 years does **not** mean that changing the predictor by 1 SD changes the gap by 14.2 years; the true effect is 0.369 years per SD.  
+- Instead, it means the predictor contributes substantially to explaining variation because it has both a meaningful effect and substantial variability.
+
+Use importance scores for **ranking predictors**, and use standardized coefficients for **interpreting effects**.
+
+```{include} tables/importance_measures_hale_nomid_nogrw.html
+```
+
+**Key Findings:**
+
+**Top Contributors (by Importance):**
+1. **Gap_Neoplasms** (Importance = 14.2 years, 94% HDI: [10.2, 18.2]): Despite having a moderate standardized coefficient (β = 0.369), neoplasms has the highest importance due to its large typical variation (SD = 38.4). This indicates that gender gaps in cancer mortality contribute substantially to HALE gaps across their typical range.
+2. **Gap_Cardiovascular** (Importance = 8.7 years, 94% HDI: [7.0, 10.5]): Has the second-highest importance despite a negative coefficient (β = -0.246). The large SD (35.5) means that variation in cardiovascular gender gaps has substantial impact, even though the effect is to narrow the overall HALE gap.
+3. **Gap_Homicide** (Importance = 5.2 years, 94% HDI: [4.7, 5.7]): Strong positive effect (β = 0.374) combined with moderate variation (SD = 13.9) makes homicide the third most important predictor.
+4. **Gap_Suicide** (Importance = 4.3 years, 94% HDI: [3.5, 5.0]): Strong positive effect (β = 0.422) but smaller variation (SD = 10.1) than homicide, placing it fourth.
+5. **Gap_ChronicRespiratory** (Importance = 3.6 years, 94% HDI: [2.9, 4.4]): Moderate effect and variation.
+
+**Comparison with Standardized Coefficients:**
+- **Neoplasms** ranks 4th by standardized coefficient but 1st by importance, highlighting the importance of accounting for typical variation.
+- **Road Traffic** ranks 1st by standardized coefficient but 6th by importance, reflecting its smaller typical variation (SD = 5.94) despite a strong effect.
+- **Cardiovascular** ranks 5th by standardized coefficient (absolute value) but 2nd by importance, showing that its large variation (SD = 35.5) makes it highly influential despite a moderate effect size.
+
+**Policy Implications:**
+The importance measure suggests that interventions targeting neoplasms and cardiovascular disease gender gaps could have the largest impact on overall HALE gaps, even though external causes (road traffic, suicide, homicide) have stronger per-unit effects. This reflects that neoplasms and cardiovascular disease have larger gender gaps across countries, making them important targets for policy intervention.
 
 ### Country-Specific Intercepts (Alpha)
 
@@ -299,13 +381,76 @@ The following table shows the posterior distributions of predictor coefficients.
 - **Gap_UnintentionalInjury** (β = 0.121, 94% HDI: [0.038, 0.214]): Gender gaps in unintentional injury mortality contribute to LE gaps, though with substantial uncertainty (HDI includes values near zero).
 
 **Negative Effects** (larger gender gaps in predictor → smaller LE gap):
-- **Gap_Cardiovascular** (β = -0.203, 94% HDI: [-0.252, -0.148]): Similar to HALE, countries with larger male-female gaps in cardiovascular mortality have *smaller* gender gaps in LE. This may reflect that cardiovascular disease affects both genders substantially.
-- **Gap_Diabetes** (β = -0.113, 94% HDI: [-0.157, -0.066]): Similar to cardiovascular disease, gender gaps in diabetes mortality are associated with smaller LE gaps.
+- **Gap_Cardiovascular** (β = -0.203, 94% HDI: [-0.252, -0.148]): This negative coefficient reflects the same **competing risks** or **"risk of last resort"** mechanism as in the HALE model. 
+
+  **Sign conventions:**
+  - LE gap = Female - Male (positive means women live longer)
+  - Gap_Cardiovascular = Male - Female for cardiovascular mortality (positive means men have higher risk)
+  
+  **What the negative coefficient means:**
+  As Gap_Cardiovascular increases (men's CVD risk rises relative to women's), the female-male LE gap tends to be smaller. Equivalently, in countries/years where the LE gap is large (women doing especially well), Gap_Cardiovascular is typically small or even negative (women's CVD risk is closer to, or higher than, men's).
+  
+  **The "risk of last resort" mechanism:**
+  Cardiovascular disease primarily affects people who have already survived many other causes of death. In settings where women's overall health is relatively good:
+  - Women avoid or survive many other causes (maternal causes, infections, violence, etc.)
+  - They live to older ages and are more exposed to late-life CVD
+  - As a result, Gap_Cardiovascular tends to shrink or even flip sign (women's CVD risk approaches or exceeds men's)
+  - At the same time, the LE gap is large, because women enjoy advantages across many causes
+  
+  In settings where women's health is relatively worse:
+  - Women face substantial risks from earlier-life causes (e.g., maternal mortality, poor access to care)
+  - Fewer women survive to the ages where CVD dominates
+  - Men still accumulate substantial CVD risk at older ages
+  - So Gap_Cardiovascular tends to be large and positive (men much worse off for CVD)
+  - But the LE gap is smaller, because women lose more years to other causes
+  
+  **The pattern:** Large female-male LE gaps tend to occur where the male-female CVD gap is small or negative. Large male-female CVD gaps tend to occur where women's overall advantage is weaker. This pattern produces the negative regression coefficient.
+
+- **Gap_Diabetes** (β = -0.113, 94% HDI: [-0.157, -0.066]): Similar to cardiovascular disease, diabetes may also follow a competing risks pattern, though the effect is smaller. When women's health is good overall, more survive to die of diabetes, making the gap smaller and the overall LE gap larger.
 
 **Comparison with HALE Model:**
 - The ranking of predictors is similar but not identical. Suicide is the strongest predictor for LE, while Road Traffic is strongest for HALE.
 - Coefficients are generally similar in magnitude, suggesting consistent relationships across both outcomes.
 - The negative effects of Cardiovascular and Diabetes are present in both models, indicating robust patterns.
+
+### Predictor Importance on Original Scale
+
+The importance measure (`|β_standardized| × SD_original`) accounts for both effect size and typical variation, providing a ranking that reflects each predictor's total contribution to gender gaps.
+
+**Interpretation of Importance Units:**
+The importance measure (`|β_standardized| × SD_original`) is a **ranking metric** that combines effect size and typical variation, not a direct counterfactual prediction.
+
+**What it represents:**
+- The importance measure is proportional to the contribution of each predictor to the **variation** in gender gaps across countries and time.
+- It answers: "Which predictors contribute most to explaining differences in gender gaps, accounting for both their effect size and how much they vary?"
+
+**Why the units are in years but not a direct effect:**
+- β_standardized = 0.368 means: a 1-SD change in the standardized predictor → 0.368 year change in gap (this is the actual effect size)
+- SD_original = 38.4 is the standard deviation of the predictor in its original units
+- Importance = 0.368 × 38.4 = 14.2 years is a **scaled contribution measure**, not the effect of a specific change
+
+**Correct interpretation:**
+- The importance of 14.2 years does NOT mean "changing Gap_Neoplasms by 1 SD changes the gap by 14.2 years" (that would be 0.368 years)
+- Instead, it means: "Gap_Neoplasms contributes substantially to explaining variation in gaps because it has both a moderate effect (0.368 years per SD) and large typical variation (SD = 38.4)"
+- The importance measure is useful for **ranking** predictors but should not be interpreted as a counterfactual effect size
+- For actual predictions, use β_standardized: a 1-SD change in Gap_Neoplasms → 0.368 year change in gap
+
+```{include} tables/importance_measures_le_nomid_nogrw.html
+```
+
+**Key Findings:**
+
+**Top Contributors (by Importance):**
+1. **Gap_Neoplasms** (Importance = 14.2 years, 94% HDI: [9.8, 18.5]): Highest importance due to large typical variation (SD = 38.4) combined with moderate effect (β = 0.368), consistent with HALE model.
+2. **Gap_Cardiovascular** (Importance = 7.2 years, 94% HDI: [5.3, 9.0]): Second-highest importance despite negative coefficient (β = -0.203), reflecting large variation (SD = 35.5).
+3. **Gap_Homicide** (Importance = 6.1 years, 94% HDI: [5.5, 6.7]): Strong positive effect (β = 0.435) with moderate variation (SD = 13.9).
+4. **Gap_Suicide** (Importance = 4.8 years, 94% HDI: [3.9, 5.6]): Strongest standardized coefficient (β = 0.471) but smaller variation (SD = 10.1) than homicide.
+5. **Gap_ChronicRespiratory** (Importance = 4.6 years, 94% HDI: [3.7, 5.4]): Moderate effect and variation.
+
+**Comparison with HALE Model:**
+- Rankings are very similar between HALE and LE models, with Neoplasms and Cardiovascular at the top in both.
+- Homicide has slightly higher importance in LE model (6.1 vs 5.2 years), while Suicide is similar (4.8 vs 4.3 years).
+- The consistency across outcomes suggests robust patterns in which predictors matter most for gender gaps.
 
 ### Country-Specific Intercepts (Alpha)
 
@@ -619,6 +764,310 @@ The results presented in this report use the **model without Mid predictors** (G
 - More stable and interpretable coefficients
 - Reduced multicollinearity
 - Simpler model structure (10 predictors instead of 20)
+
+**Selective Re-introduction of Mid Predictors - Experiment 1: Mid_Cardiovascular**
+
+Based on the correlation analysis from EDA (see `rate_gap_correlation_2019.html`), we identified that some Mid predictors have low or negative correlations with their corresponding Gap predictors, suggesting they may provide independent information. The strongest negative correlation is between `Mid_Cardiovascular` and `Gap_Cardiovascular` (r = -0.804), making it the top candidate for selective re-introduction.
+
+**Rationale:**
+- `Gap_Cardiovascular` has a negative coefficient (β = -0.247 for HALE, β = -0.203 for LE) that was interpreted as a "competing risks" mechanism
+- The strong negative correlation (r = -0.804) suggests `Mid_Cardiovascular` provides independent information about overall CVD levels that varies between countries and over time
+- Adding `Mid_Cardiovascular` might help clarify whether the negative `Gap_Cardiovascular` coefficient is confounded or represents a genuine competing risks pattern
+
+**Experiment Design:**
+- **Baseline Model**: Gap predictors only (10 predictors) - `MID_PREDICTORS_TO_INCLUDE = []`
+- **Test Model**: Baseline + `Mid_Cardiovascular` (11 predictors) - `MID_PREDICTORS_TO_INCLUDE = ['Mid_Cardiovascular']`
+- **Evaluation Criteria**: 
+  - Model fit (WAIC/LOO differences)
+  - Coefficient stability (changes in `Gap_Cardiovascular` coefficient)
+  - Posterior correlations (check if Mid-Gap correlation is manageable)
+  - Interpretability of coefficient signs
+
+**Results:**
+
+**Model Fit Comparison:**
+
+| Model | HALE Gap WAIC | HALE Gap LOO | LE Gap WAIC | LE Gap LOO |
+|-------|---------------|--------------|-------------|------------|
+| Baseline (Gap only) | 75.7 | 75.3 | -7.44 | -7.89 |
+| With Mid_Cardiovascular | 127 | 127 | 55.1 | 54.6 |
+| **Δ (Change)** | **+51.3** | **+51.7** | **+62.5** | **+62.5** |
+
+**Key Findings:**
+
+1. **Model Fit Worsens**: Adding `Mid_Cardiovascular` substantially worsens model fit for both HALE and Life Expectancy models:
+   - **HALE Gap**: ΔWAIC = +51.3, ΔLOO = +51.7 (worse)
+   - **Life Expectancy Gap**: ΔWAIC = +62.5, ΔLOO = +62.5 (worse)
+   - The increase in WAIC/LOO is well above the threshold for meaningful worsening (ΔWAIC > +5)
+
+2. **Coefficient Changes**:
+   - **Gap_Cardiovascular (HALE)**: Changed from β = -0.247 (94% HDI: [-0.292, -0.196]) to β = -0.139 (94% HDI: [-0.187, -0.088])
+     - Coefficient becomes less negative (closer to zero) but remains negative
+     - The 94% HDI still excludes zero, indicating a robust negative effect
+   - **Gap_Cardiovascular (LE)**: Changed from β = -0.203 (94% HDI: [-0.252, -0.148]) to β = -0.067 (94% HDI: [-0.116, -0.013])
+     - Coefficient becomes much less negative and the HDI is very close to zero
+     - The effect is substantially weakened
+   - **Mid_Cardiovascular (HALE)**: β = 0.526 (94% HDI: [0.426, 0.621]) - strong positive effect
+   - **Mid_Cardiovascular (LE)**: β = 0.627 (94% HDI: [0.521, 0.726]) - strong positive effect
+
+3. **Posterior Correlations**:
+   - **Gap_Cardiovascular ↔ Mid_Cardiovascular**: r = 0.413 (moderate positive correlation)
+   - This correlation is manageable (< 0.8) and does not indicate severe multicollinearity
+   - However, the correlation is still substantial enough that the model has difficulty separating their effects
+
+4. **Interpretation**:
+   - The positive `Mid_Cardiovascular` coefficients (β ≈ 0.5-0.6) indicate that higher overall CVD levels are associated with larger gender gaps (women live longer)
+   - This is consistent with the competing risks interpretation: in countries/years with high overall CVD levels, women's health is generally good (they survive other causes), leading to larger gender gaps
+   - The fact that adding `Mid_Cardiovascular` weakens the `Gap_Cardiovascular` coefficient suggests some confounding, but the negative sign persists, supporting the competing risks mechanism
+
+**Conclusion:**
+
+Adding `Mid_Cardiovascular` to the model **does not improve fit** and actually worsens it substantially (ΔWAIC/ΔLOO > 50 for both models). While the posterior correlation between `Gap_Cardiovascular` and `Mid_Cardiovascular` is manageable (r = 0.413), the model fit deterioration suggests that:
+
+1. **The baseline model (Gap predictors only) is preferred**: The simpler model provides better out-of-sample predictive performance
+2. **The competing risks interpretation is robust**: Even when controlling for overall CVD levels via `Mid_Cardiovascular`, the `Gap_Cardiovascular` coefficient remains negative (though weaker), supporting the competing risks mechanism
+3. **Mid predictors add noise, not signal**: Despite the strong negative correlation in the data (r = -0.804), adding `Mid_Cardiovascular` worsens model fit, suggesting it adds more noise than useful information
+
+**Recommendation:**
+
+**Do not include `Mid_Cardiovascular`** in the final model. The baseline model with Gap predictors only provides:
+- Better model fit (lower WAIC/LOO)
+- More interpretable coefficients
+- Simpler model structure
+- Robust competing risks interpretation for cardiovascular disease
+
+**Experiment 2: Mid_Diabetes**
+
+Following Experiment 1, we tested `Mid_Diabetes` (r = -0.325 with `Gap_Diabetes`), which has a moderate negative correlation. This was tested alone (not cumulatively with `Mid_Cardiovascular`, since that predictor did not improve the model).
+
+**Rationale:**
+- `Gap_Diabetes` has a negative coefficient (β = -0.108 for HALE, β = -0.113 for LE) that was interpreted as a "competing risks" mechanism, similar to cardiovascular disease
+- The moderate negative correlation (r = -0.325) suggests `Mid_Diabetes` may provide some independent information about overall diabetes levels
+- Testing this candidate will help determine if the pattern from Experiment 1 (worsening fit) is consistent across Mid predictors
+
+**Experiment Design:**
+- **Baseline Model**: Gap predictors only (10 predictors) - `MID_PREDICTORS_TO_INCLUDE = []`
+- **Test Model**: Baseline + `Mid_Diabetes` (11 predictors) - `MID_PREDICTORS_TO_INCLUDE = ['Mid_Diabetes']`
+- **Evaluation Criteria**: Same as Experiment 1
+
+**Results:**
+
+**Model Fit Comparison:**
+
+| Model | HALE Gap WAIC | HALE Gap LOO | LE Gap WAIC | LE Gap LOO |
+|-------|---------------|--------------|-------------|------------|
+| Baseline (Gap only) | 75.7 | 75.3 | -7.44 | -7.89 |
+| With Mid_Diabetes | 78.8 | 78.4 | -5.26 | -5.64 |
+| **Δ (Change)** | **+3.1** | **+3.1** | **+2.18** | **+2.25** |
+
+**Key Findings:**
+
+1. **Model Fit Worsens (but less dramatically than Mid_Cardiovascular)**: Adding `Mid_Diabetes` worsens model fit for both HALE and Life Expectancy models:
+   - **HALE Gap**: ΔWAIC = +3.1, ΔLOO = +3.1 (worse)
+   - **Life Expectancy Gap**: ΔWAIC = +2.18, ΔLOO = +2.25 (worse)
+   - The increase in WAIC/LOO is smaller than for `Mid_Cardiovascular` (ΔWAIC = +51.3 for HALE, +62.5 for LE), but still indicates worsening fit
+   - The change is above the threshold for meaningful worsening (ΔWAIC > +5) for HALE, but below for LE
+
+2. **Coefficient Changes**:
+   - **Gap_Diabetes (HALE)**: Changed from β = -0.108 (94% HDI: [-0.148, -0.065]) to β = -0.098 (94% HDI: [-0.14, -0.055])
+     - Coefficient becomes slightly less negative (closer to zero) but remains negative
+     - The 94% HDI still excludes zero, indicating a robust negative effect
+   - **Gap_Diabetes (LE)**: Changed from β = -0.113 (94% HDI: [-0.157, -0.066]) to β = -0.102 (94% HDI: [-0.148, -0.06])
+     - Similar pattern - slightly less negative but remains negative
+   - **Mid_Diabetes (HALE)**: β = 0.064 (94% HDI: [0.014, 0.108]) - small positive effect, HDI barely excludes zero
+   - **Mid_Diabetes (LE)**: β = 0.065 (94% HDI: [0.016, 0.114]) - small positive effect, similar to HALE
+
+3. **Posterior Correlations**:
+   - **Gap_Diabetes ↔ Mid_Diabetes**: Not in top 10 correlations (correlation < 0.3, likely very low)
+   - This is a positive finding - the two predictors are not highly correlated in the posterior, suggesting the model can distinguish their effects
+   - However, the fact that model fit still worsens suggests that even with low correlation, `Mid_Diabetes` adds more noise than signal
+
+4. **Interpretation**:
+   - The small positive `Mid_Diabetes` coefficients (β ≈ 0.06) indicate that higher overall diabetes levels are weakly associated with larger gender gaps (women live longer)
+   - This is consistent with the competing risks interpretation, but the effect is much smaller than for `Mid_Cardiovascular` (β ≈ 0.5-0.6)
+   - The fact that adding `Mid_Diabetes` only slightly weakens the `Gap_Diabetes` coefficient suggests minimal confounding
+
+**Conclusion:**
+
+Adding `Mid_Diabetes` to the model **does not improve fit** and worsens it, though less dramatically than `Mid_Cardiovascular`. The smaller worsening (ΔWAIC/ΔLOO ≈ +2-3 vs. +50-60 for `Mid_Cardiovascular`) and the low posterior correlation between `Gap_Diabetes` and `Mid_Diabetes` suggest that:
+
+1. **The baseline model (Gap predictors only) is still preferred**: Even with low correlation, adding `Mid_Diabetes` worsens model fit
+2. **The competing risks interpretation is robust**: The `Gap_Diabetes` coefficient remains negative even when controlling for overall diabetes levels
+3. **Mid predictors consistently add noise**: Both experiments show that Mid predictors worsen model fit, regardless of their correlation with Gap predictors
+
+**Recommendation:**
+
+**Do not include `Mid_Diabetes`** in the final model. The baseline model with Gap predictors only provides better model fit and more interpretable coefficients.
+
+**Next Steps:**
+
+We will continue testing the remaining candidates to ensure comprehensive evaluation. The next candidates are `Mid_ChronicRespiratory` (r = -0.0787) and `Mid_UnintentionalInjury` (r = 0.0346), which have even lower correlations with their corresponding Gap predictors. While both experiments so far have worsened model fit, testing these additional candidates will provide complete evidence for the final model specification decision.
+
+**Experiment 3: Mid_ChronicRespiratory**
+
+Following Experiments 1 and 2, we tested `Mid_ChronicRespiratory` (r = -0.0787 with `Gap_ChronicRespiratory`), which has a small negative correlation. This was tested alone (not cumulatively with previous candidates, since they did not improve the model).
+
+**Rationale:**
+- `Gap_ChronicRespiratory` has a positive coefficient (β = 0.336 for HALE, β = 0.425 for LE) indicating that larger gender gaps in respiratory disease are associated with larger HALE/LE gaps
+- The small negative correlation (r = -0.0787) suggests `Mid_ChronicRespiratory` may provide some independent information about overall respiratory disease levels
+- Testing this candidate will help determine if the pattern from previous experiments (worsening fit) continues even with very low correlations
+
+**Experiment Design:**
+- **Baseline Model**: Gap predictors only (10 predictors) - `MID_PREDICTORS_TO_INCLUDE = []`
+- **Test Model**: Baseline + `Mid_ChronicRespiratory` (11 predictors) - `MID_PREDICTORS_TO_INCLUDE = ['Mid_ChronicRespiratory']`
+- **Evaluation Criteria**: Same as previous experiments
+
+**Results:**
+
+**Model Fit Comparison:**
+
+| Model | HALE Gap WAIC | HALE Gap LOO | LE Gap WAIC | LE Gap LOO |
+|-------|---------------|--------------|-------------|------------|
+| Baseline (Gap only) | 75.7 | 75.3 | -7.44 | -7.89 |
+| With Mid_ChronicRespiratory | 96.5 | 96.1 | 16.7 | 16.3 |
+| **Δ (Change)** | **+20.8** | **+20.8** | **+24.1** | **+24.2** |
+
+**Key Findings:**
+
+1. **Model Fit Worsens Substantially**: Adding `Mid_ChronicRespiratory` worsens model fit for both HALE and Life Expectancy models:
+   - **HALE Gap**: ΔWAIC = +20.8, ΔLOO = +20.8 (worse)
+   - **Life Expectancy Gap**: ΔWAIC = +24.1, ΔLOO = +24.2 (worse)
+   - The increase in WAIC/LOO is substantial and well above the threshold for meaningful worsening (ΔWAIC > +5)
+   - This is intermediate between `Mid_Cardiovascular` (ΔWAIC ≈ +50-60) and `Mid_Diabetes` (ΔWAIC ≈ +2-3)
+
+2. **Coefficient Changes**:
+   - **Gap_ChronicRespiratory (HALE)**: Changed from β = 0.336 (94% HDI: [0.271, 0.403]) to β = 0.39 (94% HDI: [0.324, 0.457])
+     - Coefficient becomes more positive (stronger effect) when `Mid_ChronicRespiratory` is included
+     - The 94% HDI still excludes zero, indicating a robust positive effect
+   - **Gap_ChronicRespiratory (LE)**: Changed from β = 0.425 (94% HDI: [0.341, 0.496]) to β = 0.485 (94% HDI: [0.412, 0.561])
+     - Similar pattern - becomes more positive (stronger effect)
+   - **Mid_ChronicRespiratory (HALE)**: β = -0.24 (94% HDI: [-0.308, -0.178]) - **negative effect**
+   - **Mid_ChronicRespiratory (LE)**: β = -0.278 (94% HDI: [-0.343, -0.21]) - **negative effect**
+
+3. **Posterior Correlations**:
+   - **Gap_ChronicRespiratory ↔ Mid_ChronicRespiratory**: Not in top 10 correlations (correlation < 0.3, likely very low)
+   - This is consistent with the low data correlation (r = -0.0787) - the two predictors are essentially independent
+   - However, the fact that model fit still worsens substantially suggests that even with very low correlation, `Mid_ChronicRespiratory` adds more noise than signal
+
+4. **Interpretation**:
+   - The **negative** `Mid_ChronicRespiratory` coefficients (β ≈ -0.24 to -0.28) are interesting and counterintuitive
+   - This suggests that higher overall respiratory disease levels are associated with **smaller** gender gaps (women's advantage is reduced)
+   - This could reflect that in countries/years with high overall respiratory disease, women's health is relatively worse (perhaps due to smoking patterns, occupational exposures, or other factors), reducing their advantage
+   - The fact that adding `Mid_ChronicRespiratory` strengthens the `Gap_ChronicRespiratory` coefficient suggests some confounding was present, but the overall model fit worsens
+
+**Conclusion:**
+
+Adding `Mid_ChronicRespiratory` to the model **does not improve fit** and worsens it substantially (ΔWAIC/ΔLOO ≈ +20-24 for both models). Despite the very low correlation with `Gap_ChronicRespiratory` (r = -0.0787) and low posterior correlation, the model fit deterioration suggests that:
+
+1. **The baseline model (Gap predictors only) is still preferred**: Even with very low correlation, adding `Mid_ChronicRespiratory` worsens model fit
+2. **Low correlation does not guarantee improved fit**: This experiment shows that even predictors with very low correlations (r ≈ -0.08) can worsen model fit when added
+3. **Mid predictors consistently add noise**: All three experiments so far show that Mid predictors worsen model fit, regardless of their correlation strength with Gap predictors
+
+**Recommendation:**
+
+**Do not include `Mid_ChronicRespiratory`** in the final model. The baseline model with Gap predictors only provides better model fit and more interpretable coefficients.
+
+**Experiment 4: Mid_UnintentionalInjury**
+
+This is the final candidate in our systematic evaluation. We tested `Mid_UnintentionalInjury` alone (r = 0.0346 with `Gap_UnintentionalInjury`), which has the lowest correlation (essentially zero).
+
+**Rationale:**
+- `Gap_UnintentionalInjury` has a positive coefficient (β = 0.148 for HALE, β = 0.169 for LE) indicating that larger gender gaps in unintentional injuries are associated with larger HALE/LE gaps
+- The essentially zero correlation (r = 0.0346) suggests `Mid_UnintentionalInjury` should provide independent information about overall unintentional injury levels
+- Testing this final candidate will complete our comprehensive evaluation of all Mid predictors
+
+**Experiment Design:**
+- **Baseline Model**: Gap predictors only (10 predictors) - `MID_PREDICTORS_TO_INCLUDE = []`
+- **Test Model**: Baseline + `Mid_UnintentionalInjury` (11 predictors) - `MID_PREDICTORS_TO_INCLUDE = ['Mid_UnintentionalInjury']`
+- **Evaluation Criteria**: Same as previous experiments
+
+**Results:**
+
+**Model Fit Comparison:**
+
+| Model | HALE Gap WAIC | HALE Gap LOO | LE Gap WAIC | LE Gap LOO |
+|-------|---------------|--------------|-------------|------------|
+| Baseline (Gap only) | 75.7 | 75.3 | -7.44 | -7.89 |
+| With Mid_UnintentionalInjury | 155 | 154 | 83.7 | 83.2 |
+| **Δ (Change)** | **+79.3** | **+78.7** | **+91.1** | **+91.1** |
+
+**Key Findings:**
+
+1. **Model Fit Worsens Dramatically**: Adding `Mid_UnintentionalInjury` worsens model fit for both HALE and Life Expectancy models:
+   - **HALE Gap**: ΔWAIC = +79.3, ΔLOO = +78.7 (worse)
+   - **Life Expectancy Gap**: ΔWAIC = +91.1, ΔLOO = +91.1 (worse)
+   - The increase in WAIC/LOO is the **largest of all four experiments**, despite having the lowest data correlation (r = 0.0346)
+   - This is well above the threshold for meaningful worsening (ΔWAIC > +5) and is even worse than `Mid_Cardiovascular` (ΔWAIC ≈ +50-60)
+
+2. **Coefficient Changes**:
+   - **Gap_UnintentionalInjury (HALE)**: Changed from β = 0.148 (94% HDI: [0.066, 0.226]) to β = 0.351 (94% HDI: [0.273, 0.432])
+     - Coefficient becomes **much more positive** (more than doubled) when `Mid_UnintentionalInjury` is included
+     - The 94% HDI still excludes zero, indicating a robust positive effect
+   - **Gap_UnintentionalInjury (LE)**: Changed from β = 0.169 (94% HDI: [0.084, 0.248]) to β = 0.354 (94% HDI: [0.268, 0.436])
+     - Similar pattern - coefficient more than doubled
+   - **Mid_UnintentionalInjury (HALE)**: β = -0.404 (94% HDI: [-0.46, -0.35]) - **strong negative effect**
+   - **Mid_UnintentionalInjury (LE)**: β = -0.472 (94% HDI: [-0.532, -0.411]) - **strong negative effect**
+
+3. **Posterior Correlations**:
+   - **Gap_UnintentionalInjury ↔ Mid_UnintentionalInjury**: r = -0.355 (4th highest correlation in the model)
+   - This is **surprising** given the very low data correlation (r = 0.0346)
+   - The posterior correlation is moderate and negative, indicating that when both predictors are in the model, their effects are estimated as negatively correlated
+   - This suggests that despite low data correlation, the model struggles to distinguish their effects, leading to poor fit
+
+4. **Interpretation**:
+   - The **strong negative** `Mid_UnintentionalInjury` coefficients (β ≈ -0.40 to -0.47) are the largest in magnitude of all Mid predictors tested
+   - This suggests that higher overall unintentional injury levels are associated with **much smaller** gender gaps (women's advantage is substantially reduced)
+   - The fact that adding `Mid_UnintentionalInjury` more than doubles the `Gap_UnintentionalInjury` coefficient suggests substantial confounding was present
+   - However, the dramatic worsening of model fit indicates that this "correction" comes at the cost of overall model performance
+
+**Conclusion:**
+
+Adding `Mid_UnintentionalInjury` to the model **does not improve fit** and worsens it **dramatically** (ΔWAIC/ΔLOO ≈ +79-91 for both models), despite having the lowest data correlation (r = 0.0346). This is the worst-performing candidate of all four experiments. The results show that:
+
+1. **Low data correlation does not guarantee good model fit**: This experiment demonstrates that even predictors with essentially zero data correlation (r = 0.0346) can cause severe model fit deterioration
+2. **Posterior correlation can differ substantially from data correlation**: The posterior correlation (r = -0.355) is much stronger than the data correlation (r = 0.0346), indicating that the model struggles to estimate independent effects
+3. **The baseline model (Gap predictors only) is definitively preferred**: All four experiments consistently show that Mid predictors worsen model fit, regardless of their correlation strength with Gap predictors
+
+**Recommendation:**
+
+**Do not include `Mid_UnintentionalInjury`** in the final model. The baseline model with Gap predictors only provides significantly better model fit and more interpretable coefficients.
+
+---
+
+## Summary of All Experiments: Selective Re-introduction of Mid Predictors
+
+We systematically tested four Mid predictors, selected based on low or negative correlations with their corresponding Gap predictors. The results are summarized below:
+
+**Experiment Summary Table:**
+
+| Experiment | Mid Predictor | Data Correlation (r) | ΔWAIC (HALE) | ΔWAIC (LE) | Result |
+|-----------|---------------|----------------------|--------------|------------|--------|
+| 1 | Mid_Cardiovascular | -0.804 | +51.3 | +62.5 | ❌ Worsened |
+| 2 | Mid_Diabetes | -0.325 | +3.1 | +2.18 | ❌ Worsened |
+| 3 | Mid_ChronicRespiratory | -0.0787 | +20.8 | +24.1 | ❌ Worsened |
+| 4 | Mid_UnintentionalInjury | 0.0346 | +79.3 | +91.1 | ❌ Worsened |
+
+**Key Findings Across All Experiments:**
+
+1. **All Mid predictors worsen model fit**: Every single candidate tested worsened model fit, with ΔWAIC ranging from +2.18 to +91.1
+2. **Correlation strength does not predict fit improvement**: The worst-performing candidate (`Mid_UnintentionalInjury`, ΔWAIC = +91.1) had the lowest data correlation (r = 0.0346), while the best-performing candidate (`Mid_Diabetes`, ΔWAIC = +2.18) had a moderate negative correlation (r = -0.325)
+3. **Posterior correlations can differ from data correlations**: In several experiments, posterior correlations were stronger than data correlations, indicating the model struggles to estimate independent effects even when data correlations are low
+4. **Coefficient changes are inconsistent**: Some Mid predictors strengthen their corresponding Gap coefficients (e.g., `Mid_ChronicRespiratory`, `Mid_UnintentionalInjury`), while others weaken them (e.g., `Mid_Cardiovascular`, `Mid_Diabetes`), but all worsen overall model fit
+
+**Final Recommendation:**
+
+**The baseline model with Gap predictors only is the optimal specification.** All four experiments provide consistent evidence that:
+
+- Mid predictors add more noise than signal, regardless of their correlation with Gap predictors
+- The competing risks interpretation for negative Gap coefficients (e.g., `Gap_Cardiovascular`, `Gap_Diabetes`) remains robust and is not improved by adding Mid predictors
+- The model achieves best fit (lowest WAIC/LOO) with Gap predictors only
+
+**Final Model Specification:**
+- **Predictors**: 10 Gap predictors only (no Mid predictors)
+- **Year Effects**: No Gaussian Random Walk (tested separately, did not improve fit)
+- **Model Structure**: Hierarchical panel model with country random intercepts
+- **WAIC (HALE)**: 75.7
+- **WAIC (LE)**: -7.44
 
 **(B) Year Fixed Effects (Gaussian Random Walk) - COMPLETED:**
 - Add `γ_t` to model: `y*_{it} = α_i + γ_t + X*_{it}β + ε_{it}`

@@ -14,6 +14,8 @@ This project explores differences in life expectancy and health-adjusted life ex
 
 - [Neoplasms Drilldown Analysis](neoplasms_report.md) - Granular analysis of the cancer mortality gender gap, including specific cancer types and risk factor attribution (Behavioral, Metabolic, Environmental).
 
+- [Exploratory Data Analysis](eda_report.md) - Summary of exploratory data analysis of gender gaps in HALE and Life Expectancy, including target variables, predictors, summary statistics, and relationships between variables.
+
 - [Validation Experiments](validation.md) - Model validation comparing WHO and IHME indicators to ensure results remain stable across data sources.
 
 - [Time Series Analysis](time_series_report.md) - Trends in health indicators and gender gaps (2000-2019), visualizing how HALE, Life Expectancy, and cause-specific mortality indicators have evolved over time.

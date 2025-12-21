@@ -11,6 +11,15 @@ The goal of this project is to see what part of the difference in HALE can be ex
 
 Background: https://ourworldindata.org/why-do-women-live-longer-than-men
 
+## Style Guide
+
+### Terminology
+
+- **Never use "predictor indicator"** - Use either "predictor" or "indicator" as appropriate:
+  - Use "predictor" when referring to variables used in models (e.g., "predictors in the Bayesian model", "predictor gaps", "predictor rates")
+  - Use "indicator" when referring to data sources or measurements intended to quantify something in the world (e.g., "IHME indicators", "health indicators", "mortality indicators")
+  - In most contexts, "predictor" is preferred when discussing variables used in statistical models
+
 ## Background Information
 
 ### Summary of Factors Contributing to the HALE Gender Gap
@@ -1206,40 +1215,125 @@ y*_{it} ~ N(α_i + X*_{it}β, σ)
 - Monitor sampling efficiency and adjust if needed
 - No missing data handling needed (complete panel)
 
-**Step 10.4: Model Extensions (Future Iterations)**
+**Step 10.4: Predictor selection** ✅ **COMPLETED**
 
 After implementing the basic random-intercept model, consider these extensions:
 
-**(A) Predictor Selection Based on Correlations:**
-- **Status**: Identified in posterior correlation analysis
-- **Problem**: Very high negative correlations (r ≈ -0.9 to -1.0) between Mid and Gap predictors for same indicators (Homicide, Alcohol, Liver Disease, Road Traffic, Suicide)
-- **Approach**:
-  1. Compute fit metrics (WAIC, LOO-CV) for current full model
-  2. Test series of reduced models by removing Mid predictors where Mid-Gap correlation > 0.9
-  3. Compare models using WAIC/LOO differences, posterior predictive checks, coefficient stability
-- **Rationale**: If removing Mid predictors doesn't worsen fit, it suggests Gap predictors capture relevant information and simplifies model interpretation
+**(A) Predictor Selection Based on Correlations:** ✅ **COMPLETED**
+- **Initial Analysis**: ✅ COMPLETED - Removing all Mid predictors dramatically improved model fit (ΔWAIC ≈ -234 to -280)
+- **Baseline Model**: Model uses only Gap predictors (10 predictors), which eliminated multicollinearity issues from high correlations (r ≈ -0.9 to -1.0) between Mid and Gap predictors for indicators like Homicide, Alcohol, Liver Disease, Road Traffic, and Suicide
+- **Selective Re-introduction Experiments**: ✅ **COMPLETED** - Systematically tested four Mid predictors with low/negative correlations:
+  1. **Mid_Cardiovascular** (r = -0.804): Tested - worsened fit (ΔWAIC +51.3 HALE, +62.5 LE)
+  2. **Mid_Diabetes** (r = -0.325): Tested - worsened fit (ΔWAIC +3.1 HALE, +2.18 LE)
+  3. **Mid_ChronicRespiratory** (r = -0.0787): Tested - worsened fit (ΔWAIC +20.8 HALE, +24.1 LE)
+  4. **Mid_UnintentionalInjury** (r = 0.0346): Tested - worsened fit (ΔWAIC +79.3 HALE, +91.1 LE)
+- **Final Conclusion**: ✅ **All experiments completed** - Baseline model with Gap predictors only is optimal. All four Mid predictors tested worsened model fit regardless of correlation strength. The competing risks interpretation for negative Gap coefficients (Cardiovascular, Diabetes) remains robust without Mid predictors.
+- **Final Model Specification**: 10 Gap predictors only (no Mid predictors)
+- **Documentation**: Complete results documented in `bayesian_model_report.md` with detailed analysis of all four experiments
 
-**(B) Year Fixed Effects:**
+- **Approach: Selective Re-introduction of Mid Predictors** ✅ **COMPLETED**
+  - **Rationale**: Mid predictors with low or negative correlations to Gap predictors provide independent information about overall (midpoint) levels that varies between countries and over time, which the model currently doesn't see
+  - **Strategy**: Add back Mid predictors selectively, starting with those that have the lowest correlations with their corresponding Gap predictors
+  - **Correlation Data** (from `eda.md`, table: `rate_gap_correlation_2019.html`):
+    - **High positive correlations** (r > 0.9): Homicide (0.999), Alcohol (0.982), RoadTraffic (0.971), DrugDisorder (0.957), LiverDisease (0.955), Suicide (0.9) - **DO NOT add back** (multicollinearity risk)
+    - **Moderate positive**: Neoplasms (0.685) - **Consider later** if needed
+    - **Low/zero correlation**: UnintentionalInjury (0.0346) - **Good candidate**
+    - **Negative correlations**: ChronicRespiratory (-0.0787), Diabetes (-0.325), Cardiovascular (-0.804) - **Excellent candidates** (provide independent information)
+
+- **Testing Order** (✅ **COMPLETED** - all four candidates tested):
+  1. ✅ **Mid_Cardiovascular** (r = -0.804 with Gap_Cardiovascular) - **Result**: Worsened fit (ΔWAIC +51.3 HALE, +62.5 LE)
+  2. ✅ **Mid_Diabetes** (r = -0.325 with Gap_Diabetes) - **Result**: Worsened fit (ΔWAIC +3.1 HALE, +2.18 LE)
+  3. ✅ **Mid_ChronicRespiratory** (r = -0.0787 with Gap_ChronicRespiratory) - **Result**: Worsened fit (ΔWAIC +20.8 HALE, +24.1 LE)
+  4. ✅ **Mid_UnintentionalInjury** (r = 0.0346 with Gap_UnintentionalInjury) - **Result**: Worsened fit (ΔWAIC +79.3 HALE, +91.1 LE)
+
+- **Implementation Strategy** (✅ **COMPLETED** - Manual, Iterative Approach):
+  - ✅ Baseline model established (Gap predictors only, WAIC = 75.7 HALE, -7.44 LE)
+  - ✅ Each candidate tested individually (not cumulatively, since none improved fit)
+  - ✅ Results evaluated after each experiment (WAIC/LOO comparison, coefficient stability, posterior correlations)
+  - ✅ All experiments documented in `bayesian_model_report.md` with detailed analysis
+
+- **Final Results**:
+  - ✅ **All four Mid predictors worsened model fit** regardless of correlation strength
+  - ✅ **Baseline model (Gap predictors only) confirmed as optimal**
+  - ✅ **Competing risks interpretation remains robust** - negative coefficients for Gap_Cardiovascular and Gap_Diabetes are not artifacts requiring Mid predictors
+  - ✅ **Final model specification**: 10 Gap predictors only (no Mid predictors)
+  - ✅ **Documentation**: Complete results documented in `bayesian_model_report.md` with detailed analysis of all four experiments
+
+**(B) Year Fixed Effects (Gaussian Random Walk) - ✅ COMPLETED:**
 - Add `γ_t` to model: `y*_{it} = α_i + γ_t + X*_{it}β + ε_{it}`
 - Controls for global temporal trends (e.g., global health improvements affecting all countries)
-- Test whether this improves model fit (WAIC/LOO comparison)
+- **Implementation**: Use Gaussian Random Walk (GRW) for year effects:
+  - `γ_1 ~ N(0, σ_γ₀)` (initial year effect)
+  - `γ_t ~ N(γ_{t-1}, σ_γ)` for t > 1 (random walk)
+  - Creates smooth temporal trends with only 2 parameters (vs. 20 for categorical year effects)
+- **Rationale**: GRW balances flexibility (can capture non-linear trends) with parsimony (only 2 parameters) and smoothness (natural for gradual health improvements)
+- **Results**: Year effects were tested but **do not improve model fit**:
+  - HALE Gap: ΔWAIC = +97.7 (worse), ΔLOO = +97.1 (worse)
+  - Life Expectancy Gap: ΔWAIC = +110.85 (worse), ΔLOO = +110.22 (worse)
+  - Effective parameters increased by ~12-15 without improving predictive performance
+- **Conclusion**: Model **without year effects is preferred** (better WAIC/LOO, simpler)
+- **Conditional implementation**: Controlled by global variable `INCLUDE_YEAR_EFFECTS` (default: False)
+- **Output filenames**: Include "yesgrw" or "nogrw" suffix along with "yesmid"/"nomid" suffix
 
-**(C) AR(1) Structure:**
-- Add autoregressive structure on residuals or intercepts
-- Models temporal autocorrelation (year-to-year persistence)
-- May improve predictions if residuals are correlated over time
+**Model Version Output Files:**
+- **Files with `_nomid` suffix (no additional suffix)**: Model with Gap predictors only, NO year effects
+  - Example: `beta_coefficients_hale_nomid.html`, `model_comparison_metrics_nomid.html`
+  - Configuration: `INCLUDE_MID_PREDICTORS = False`, `INCLUDE_YEAR_EFFECTS = False`
+- **Files with `_nomid_yesgrw` suffix**: Model with Gap predictors only, WITH year effects (GRW)
+  - Example: `beta_coefficients_hale_nomid_yesgrw.html`, `model_comparison_metrics_nomid_yesgrw.html`
+  - Configuration: `INCLUDE_MID_PREDICTORS = False`, `INCLUDE_YEAR_EFFECTS = True`
+- **Note**: Both versions exclude Turkey (controlled by `COUNTRIES_TO_EXCLUDE = ['TUR']`)
+- **Comparison**: Compare WAIC/LOO between `_nomid` and `_nomid_yesgrw` files to assess whether year effects improve model fit
 
-**(D) Random Slopes:**
-- Allow coefficients to vary by country: `β_i ~ N(μ_β, σ_β)`
-- Test whether random slopes improve WAIC/LOO
-- Only add if there is sufficient evidence that relationships vary by country
+
+
 
 **Decision Framework:**
 - Compare models using WAIC or LOO cross-validation
 - Add extensions only if they meaningfully improve model fit or provide substantive insights
 - Avoid overcomplicating the model without clear benefit
 
-**Step 10.5: Comparison with Cross-Sectional Model**
+
+**Step 10.5: Importance Measures and Counterfactual Analysis**
+
+**(A) Importance Measures on Original Scale:** ✅ **COMPLETED**
+- **Current approach**: Using standardized coefficients (β in years per standard deviation)
+  - Allows direct comparison across predictors
+  - Interpretable as "1-SD change in predictor → β years change in gap"
+  - But doesn't reflect the natural scale or typical variation of each predictor
+- **Proposed addition**: Compute importance measure on original scale
+  - **Importance measure** (|β_standardized| × SD_original) - **Matches Elastic Net approach**
+    - Interpretation: Total contribution when predictor varies by 1 SD in its original units
+    - Formula: importance = |β_standardized| × SD_original
+    - Units: years (total effect size)
+    - Useful for: Ranking predictors by their total contribution, accounting for both effect size and typical variation
+    - Example: If Gap_Alcohol has β_standardized = 0.158 and SD_original = 2.5, then importance = 0.158 × 2.5 = 0.395 years
+    - This matches what was used in the Elastic Net models: `importance = abs(coef) * std_original`
+- **Implementation**: 
+  - Extract SD values used for standardization from `data["meta"]["X_std"]` (stored in `prepare_panel_data`)
+  - For each predictor, compute from posterior distributions:
+    - importance = |β_standardized| × SD_original (mean, 94% HDI)
+  - Create comparison table showing:
+    - Predictor name
+    - Standardized coefficient (mean, 94% HDI) - current
+    - SD_original (for reference)
+    - Importance measure (mean, 94% HDI) - sorted by importance (descending)
+  - Save table to HTML for inclusion in report
+- **Interpretation**: 
+  - **Standardized coefficients**: Which predictors matter most when all are on the same scale? (current approach)
+  - **Importance measure**: Which predictors contribute most given their typical variation (1 SD)? (matches Elastic Net, units: years)
+- **Why this matters**: A predictor with a large standardized coefficient might have small importance if its SD is small, or vice versa. The importance measure accounts for both effect size and typical variation, providing a better ranking for policy interventions.
+
+**(B) Counterfactual Analysis:** ⏳ **TO DO** (Next Step)
+- Extend counterfactual analysis:
+  - Predict effect of reducing alcohol mortality in a given country in a given year
+  - Predict effect of long-term trends (e.g., gradual reduction over 10 years)
+  - Provide uncertainty bands for temporal counterfactuals
+- ⏳ Export counterfactual results: `counterfactuals_panel_usa_hale.html`
+
+
+
+**Step 10.6: Comparison with Cross-Sectional Model**
 
 **Key Comparisons:**
 1. **Coefficient Estimates**: Compare posterior means of β to Elastic Net coefficients
@@ -1286,7 +1380,11 @@ After implementing the basic random-intercept model, consider these extensions:
 - ✅ Export results to HTML tables:
   - `tables/beta_coefficients_hale.html`, `tables/beta_coefficients_le.html`
   - `tables/alpha_coefficients_hale.html`, `tables/alpha_coefficients_le.html`
-- ⏳ Posterior predictive checks (PPCs) - Not yet implemented
+- ✅ Posterior predictive checks (PPCs):
+  - Distribution comparison plots (overlay of observed vs posterior predictive)
+  - Q-Q plots comparing observed vs posterior predictive quantiles
+  - Test statistics comparison (mean, std, min, max) with p-values
+  - Figures: `figs/ppc_hale.png`, `figs/ppc_le.png`, `figs/ppc_test_stats_hale.png`, `figs/ppc_test_stats_le.png`
 
 **Deliverable 3:**
 - ✅ Export Elastic Net coefficients from cross-sectional models:
@@ -1306,12 +1404,7 @@ After implementing the basic random-intercept model, consider these extensions:
   - Whether importance patterns shift
   - Interpretation of posterior correlations
 
-**Deliverable 4:**
-- ⏳ Extend counterfactual analysis:
-  - Predict effect of reducing alcohol mortality in a given country in a given year
-  - Predict effect of long-term trends (e.g., gradual reduction over 10 years)
-  - Provide uncertainty bands for temporal counterfactuals
-- ⏳ Export counterfactual results: `counterfactuals_panel_usa_hale.html`
+
 
 **Deliverable 5:**
 - ✅ Integrate panel model results into JupyterBook site
@@ -1324,13 +1417,52 @@ After implementing the basic random-intercept model, consider these extensions:
 
 **Future Work (After Initial Implementation):**
 - ✅ Implemented same model for Life Expectancy gap
-- ⏳ Compute model fit metrics (WAIC, LOO-CV) for current full model
-- ⏳ Test reduced models by removing Mid predictors where Mid-Gap correlation > 0.9:
-  - Remove Mid_Homicide, Mid_Alcohol, Mid_LiverDisease, Mid_RoadTraffic, Mid_Suicide
-  - Compare fit metrics to determine if simplification improves model
+- ✅ Compute model fit metrics (WAIC, LOO-CV) for current full model:
+  - WAIC and LOO-CV computation for both HALE and Life Expectancy models
+  - Pointwise contribution plots
+  - Identification of influential observations
+  - Model comparison summary table
+  - Figures: `figs/waic_loo_hale.png`, `figs/waic_loo_le.png`
+  - Tables: `tables/influential_observations_hale.html`, `tables/influential_observations_le.html`, `tables/model_comparison_metrics.html`
+  - Fixed log-likelihood computation for nutpie sampler
+  - Created helper functions to reduce code duplication
+- ⏳ Test simplified model by removing all Mid predictors:
+  - Model 1: Include all Mid predictors (current model)
+  - Model 2: Exclude all Mid predictors (keep only Gap predictors)
+  - Compare fit metrics (WAIC, LOO-CV) to determine if simplification improves model
+  - Update output filenames to include "yesmid" or "nomid" suffix for comparison
 - ⏳ Test model extensions (year fixed effects, AR(1), random slopes)
-- ⏳ Posterior predictive checks
+- ✅ Posterior predictive checks (see Deliverable 2)
 - ⏳ Counterfactual analysis with uncertainty quantification
+
+
+## Neoplasms (Cancer) Drilldown Analysis
+
+Neoplasms are the largest single driver of the gender gap in Life Expectancy and HALE. This analysis aims to "look under the hood" of the neoplasms category to identify which specific cancers and risk factors are responsible for this gap.
+
+### Objective
+Identify the specific types of cancer that contribute most to the male-female mortality difference and determine the extent to which these gaps are associated with behavioral, metabolic, or environmental risk factors.
+
+### Data
+- **Source**: IHME Global Burden of Disease (2023)
+- **Scope**: United States (as a representative high-income country case study)
+- **Variables**: Deaths and Death Rates (per 100,000) for ~30 specific cancer types, further disaggregated by:
+    - **Behavioral risks** (e.g., smoking, diet, alcohol)
+    - **Metabolic risks** (e.g., high BMI, high blood pressure)
+    - **Environmental/occupational risks** (e.g., air pollution, workplace carcinogens)
+
+### Analysis Steps
+1. **Compute Gender Gaps by Cancer Type**:
+   - Calculate the absolute difference in death rates: $Gap_{cancer} = Rate_{Male} - Rate_{Female}$
+2. **Rank Contributors**:
+   - Rank cancer types by their absolute contribution to the total neoplasm gap.
+   - For example, how much of the total neoplasm gap is explained specifically by lung cancer?
+3. **Risk Factor Attribution**:
+   - For each cancer type, calculate the portion of the gap attributable to behavioral vs. metabolic vs. environmental risks.
+   - This will help distinguish between gaps driven by lifestyle choices (behavioral) versus biological or environmental factors.
+4. **Visualization**:
+   - Create a stacked bar chart showing the total neoplasm gap, broken down by specific cancer types.
+   - Create a second visualization showing the risk-factor breakdown for the top contributing cancers.
 
 
 

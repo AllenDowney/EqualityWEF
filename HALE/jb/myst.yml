@@ -14,7 +14,9 @@ project:
       title: Technical Report
     - file: data_inventory.md
       title: Data Inventory
-    - file: eda.ipynb
+    - file: neoplasms_report.md
+      title: Neoplasms Analysis
+    - file: eda_report.md
       title: Exploratory Data Analysis
     - file: validation.md
       title: Validation Experiments
