@@ -20,6 +20,10 @@ Background: https://ourworldindata.org/why-do-women-live-longer-than-men
   - Use "indicator" when referring to data sources or measurements intended to quantify something in the world (e.g., "IHME indicators", "health indicators", "mortality indicators")
   - In most contexts, "predictor" is preferred when discussing variables used in statistical models
 
+### Notebook Display
+
+- **Show results in notebooks**: Notebooks should display figures, tables, and other results inline, not just generate and save files. Each figure should be generated in a separate cell that both shows and saves the figure. This makes it easier to review results while running the notebook and ensures that the notebook serves as both a computational tool and a presentation of results.
+
 ## Background Information
 
 ### Summary of Factors Contributing to the HALE Gender Gap
@@ -1325,11 +1329,110 @@ After implementing the basic random-intercept model, consider these extensions:
 - **Why this matters**: A predictor with a large standardized coefficient might have small importance if its SD is small, or vice versa. The importance measure accounts for both effect size and typical variation, providing a better ranking for policy interventions.
 
 **(B) Counterfactual Analysis:** ⏳ **TO DO** (Next Step)
-- Extend counterfactual analysis:
-  - Predict effect of reducing alcohol mortality in a given country in a given year
-  - Predict effect of long-term trends (e.g., gradual reduction over 10 years)
-  - Provide uncertainty bands for temporal counterfactuals
-- ⏳ Export counterfactual results: `counterfactuals_panel_usa_hale.html`
+
+**Overview:**
+Adapt the Elastic Net counterfactual approach to the Bayesian panel model framework. The key differences are:
+- Use posterior distributions (not just point estimates) to quantify uncertainty
+- Account for country-specific intercepts (α_i) when making predictions
+- Standardize predictors using stored transformation parameters from `prepare_panel_data()`
+- Center targets using stored mean from data preparation
+- Generate posterior predictive distributions for counterfactual scenarios
+
+**Approach (Similar to Elastic Net, with Bayesian Extensions):**
+
+1. **Gap Extremes Table** (Same as Elastic Net):
+   - For each gap predictor, find minimum and maximum gap values across all country-year observations (2000-2019)
+   - Store the country-year combination that achieves each extreme
+   - This defines the "best attainable" gap for each predictor
+
+2. **Counterfactual Prediction Function**:
+   - **Input**: Country code, year, gap predictor name
+   - **Steps**:
+     a. Get current country-year values for all predictors (from panel dataset)
+     b. Determine target gap (same logic as Elastic Net):
+        - If current gap is positive (Male > Female): use minimum gap (best case)
+        - If current gap is negative (Female > Male): use maximum gap (best case)
+        - If target gap has opposite sign, set to zero
+     c. Adjust Male/Female values to achieve target gap (same logic as Elastic Net):
+        - If gap is positive: bring men toward women's level
+        - If gap is negative: bring women toward men's level
+     d. Recompute Mid and Gap from adjusted Male/Female values
+     e. **Standardize the counterfactual predictors** using stored mean/SD from `data["meta"]["X_mean"]` and `data["meta"]["X_std"]`
+     f. **Generate posterior predictive distribution**:
+        - For each posterior sample of β and α_i:
+          - Compute: `y*_counterfactual = α_i + X*_counterfactual β`
+        - Convert back to original scale: `y_counterfactual = y*_counterfactual + ȳ` (using stored `data["meta"]["y_mean"]`)
+     g. **Compute original prediction** (same process, using current predictor values)
+     h. **Calculate change**: `change = y_counterfactual - y_original` (posterior distribution)
+   - **Output**: 
+     - Mean change and 94% HDI (credible interval)
+     - Full posterior distribution of change
+     - Original and counterfactual predictions (with uncertainty)
+
+3. **Counterfactual Table for a Country-Year**:
+   - For each gap predictor, compute counterfactual prediction
+   - Sort by importance (using importance measures from Step 10.5)
+   - Create table with columns:
+     - Indicator name
+     - Current gap (original value)
+     - Target gap (best attainable)
+     - Target Country-Year (or "" if set to zero)
+     - Change in gap (mean, 94% HDI) - **Key difference from Elastic Net: includes uncertainty**
+     - Importance (for sorting/reference)
+   - Export to HTML table
+
+4. **Aggregate Effects**:
+   - Sum of gap-closing indicators (negative changes)
+   - Sum of gap-widening indicators (positive changes)
+   - **With uncertainty**: Compute posterior distribution of aggregate effects
+   - Report mean and 94% HDI for aggregate effects
+
+5. **Visualization**:
+   - Forest plot showing counterfactual effects (mean and 94% HDI) for each indicator
+   - Comparison with Elastic Net counterfactual results (point estimates vs. posterior means)
+   - Uncertainty bands showing credible intervals
+
+**Key Implementation Details:**
+
+- **Standardization**: Use stored `X_mean` and `X_std` from `data["meta"]` to standardize counterfactual predictors
+- **Centering**: Use stored `y_mean` from `data["meta"]` to convert predictions back to original scale
+- **Country Intercept**: Use the country-specific α_i from posterior samples (not just the mean)
+- **Posterior Sampling**: Use all posterior samples (not just summary statistics) to propagate uncertainty
+- **Efficiency**: Can use `pm.sample_posterior_predictive()` or manually compute predictions for each posterior sample
+
+**Comparison with Elastic Net Approach:**
+
+| Aspect | Elastic Net | Bayesian Panel |
+|--------|-------------|----------------|
+| Predictions | Point estimates | Posterior distributions |
+| Uncertainty | None (point estimates only) | Full uncertainty quantification (HDI) |
+| Country Effects | None (cross-sectional) | Country-specific intercepts (α_i) |
+| Temporal Context | Single year (most recent) | Can analyze any country-year (2000-2019) |
+| Standardization | Per-analysis | Uses stored transformation parameters |
+| Interpretation | "What if we changed X?" | "What if we changed X? (with uncertainty)" |
+
+**Deliverables:**
+
+1. **Counterfactual Function**: `counterfactual_predictions_bayesian(country, year, gap_predictor, trace, data)`
+   - Returns dictionary with posterior distributions of original prediction, counterfactual prediction, and change
+
+2. **Counterfactual Table Function**: `counterfactuals_for_country_year_bayesian(country, year, trace, data, importance_summary)`
+   - Returns DataFrame with counterfactual results for all gap predictors, sorted by importance
+
+3. **HTML Tables**: Export counterfactual tables for example countries (e.g., USA in 2019)
+   - Include uncertainty columns (94% HDI) for all predictions
+   - Format: `counterfactuals_usa_2019_hale_bayesian.html`
+
+4. **Visualizations**:
+   - Forest plot of counterfactual effects with uncertainty bands
+   - Comparison plot: Bayesian (with uncertainty) vs. Elastic Net (point estimates)
+
+5. **Documentation**: Update `bayesian_model_report.md` with counterfactual analysis section
+   - Explain methodology
+   - Present results for example countries
+   - Compare with Elastic Net counterfactual results
+   - Discuss policy implications with uncertainty quantification
+
 
 
 
@@ -1385,6 +1488,11 @@ After implementing the basic random-intercept model, consider these extensions:
   - Q-Q plots comparing observed vs posterior predictive quantiles
   - Test statistics comparison (mean, std, min, max) with p-values
   - Figures: `figs/ppc_hale.png`, `figs/ppc_le.png`, `figs/ppc_test_stats_hale.png`, `figs/ppc_test_stats_le.png`
+- ⏳ **R² and Residual Analysis** (RECOMMENDED - see "Future Work" section below):
+  - Compute R² (explained variance) for comparison with Elastic Net models
+  - Residual plots (residuals vs. predicted, residuals vs. country, residuals vs. year)
+  - Residual statistics and summary tables
+  - **Note**: WAIC/LOO-CV are computed, but R² and residuals provide additional interpretability and comparability
 
 **Deliverable 3:**
 - ✅ Export Elastic Net coefficients from cross-sectional models:
@@ -1426,6 +1534,32 @@ After implementing the basic random-intercept model, consider these extensions:
   - Tables: `tables/influential_observations_hale.html`, `tables/influential_observations_le.html`, `tables/model_comparison_metrics.html`
   - Fixed log-likelihood computation for nutpie sampler
   - Created helper functions to reduce code duplication
+- ⏳ **Compute R² and Residual Analysis for Bayesian Model** (RECOMMENDED):
+  - **Rationale**: While WAIC/LOO-CV are excellent for model comparison, R² and residual analysis provide:
+    1. **Interpretability**: R² is more intuitive than ELPD for communicating model fit to non-statisticians
+    2. **Comparability**: Direct comparison with Elastic Net models (which report R²)
+    3. **Diagnostic value**: Residual plots can reveal model misspecification, heteroscedasticity, or outliers
+    4. **Standard practice**: Most regression models report R² as a standard goodness-of-fit measure
+  - **Implementation**:
+    - Compute posterior mean predictions: `ŷ_{it} = mean(α_i + X*_{it}β) + ȳ` for each observation
+    - Compute residuals: `e_{it} = y_{it} - ŷ_{it}` (on original scale)
+    - Compute R²: `R² = 1 - (SS_res / SS_tot)` where:
+      - `SS_res = Σ(y_{it} - ŷ_{it})²` (sum of squared residuals)
+      - `SS_tot = Σ(y_{it} - ȳ)²` (total sum of squares)
+    - Compute posterior distribution of R² (using posterior samples of predictions) to quantify uncertainty
+    - Create residual plots:
+      - Residuals vs. predicted values (check for heteroscedasticity, non-linearity)
+      - Residuals vs. country (check for country-specific patterns)
+      - Residuals vs. year (check for temporal patterns)
+      - Histogram of residuals
+  - **Outputs**:
+    - R² value (point estimate and posterior distribution)
+    - Residual statistics (mean, SD, min, max, percentiles)
+    - Figures: `figs/residuals_vs_predicted_hale.png`, `figs/residuals_vs_predicted_le.png`, `figs/residuals_qq_hale.png`, `figs/residuals_qq_le.png`, etc.
+    - Tables: `tables/residual_summary_hale.html`, `tables/residual_summary_le.html`
+    - Comparison table: R² for Bayesian vs. Elastic Net models
+  - **Location**: Add to `md/bayesian_model.md` in the "Model Evaluation" section, after posterior predictive checks
+  - **Report**: Update `jb/bayesian_model_report.md` with R² values and residual analysis results
 - ⏳ Test simplified model by removing all Mid predictors:
   - Model 1: Include all Mid predictors (current model)
   - Model 2: Exclude all Mid predictors (keep only Gap predictors)

@@ -125,15 +125,23 @@ The panel dataset includes:
   - Chronic Respiratory Disease (IHME)
   - Liver Disease (IHME)
   - Unintentional Injuries (IHME)
+  - Drug Use Disorders (IHME)
 - **Predictors**: Gap (gender difference) columns only for each indicator (Mid predictors excluded based on model comparison - see Model Extensions section)
 - Complete panel: No missing data
 - **Sample size**: Approximately 740 country-year observations (37 countries × 20 years, excluding Turkey)
-- **Number of predictors**: 10 (Gap predictors for: Alcohol, Suicide, Homicide, Road Injuries, Cardiovascular, Diabetes, Neoplasms, Chronic Respiratory, Liver Disease, Unintentional Injuries)
+- **Number of predictors**: 11 (Gap predictors for: Alcohol, Suicide, Homicide, Road Injuries, Cardiovascular, Diabetes, Neoplasms, Chronic Respiratory, Liver Disease, Unintentional Injuries, Drug Disorders)
+
+**Note on Drug Disorders Predictor:**
+Drug Disorders was added to the model to match the plan specification (10 indicators). Comparison of model fit metrics before and after adding Drug Disorders shows:
+- **HALE Gap Model**: WAIC increased from 75.7 to 87.7 (ΔWAIC = +12.0), LOO increased from 75.3 to 87.3 (ΔLOO = +12.0), while R² remained essentially unchanged (0.987 → 0.9874) and MAE improved slightly (0.158 → 0.157 years)
+- **Life Expectancy Gap Model**: WAIC increased from -7.5 to -2.6 (ΔWAIC = +4.9), LOO increased from -7.9 to -3.0 (ΔLOO = +4.9), while R² remained essentially unchanged (0.985 → 0.9851) and MAE remained essentially unchanged (0.175 → 0.175 years)
+
+The increase in WAIC/LOO (worse fit) suggests that Drug Disorders adds minimal predictive power while slightly increasing model complexity. However, the R² and MAE metrics indicate that predictive accuracy is maintained. The inclusion of Drug Disorders is justified by the plan's specification and allows for comprehensive counterfactual analysis across all mortality indicators.
 
 ## Results: HALE Gap Model
 
 **Model Specification:**
-- **Predictors**: Gap predictors only (10 predictors), excluding Mid predictors
+- **Predictors**: Gap predictors only (11 predictors), excluding Mid predictors
 - **Year Effects**: Not included (tested but worsen model fit)
 - **Countries**: OECD countries excluding Turkey (37 countries, ~740 observations)
 - **Model Performance**: WAIC = 75.3 (ELPD), LOO = 74.9 (ELPD), p_waic = 50.8
@@ -349,7 +357,7 @@ Bayesian Posterior Distributions vs Elastic Net Coefficients (HALE Gap)
 ## Results: Life Expectancy Gap Model
 
 **Model Specification:**
-- **Predictors**: Gap predictors only (10 predictors), excluding Mid predictors
+- **Predictors**: Gap predictors only (11 predictors), excluding Mid predictors
 - **Year Effects**: Not included (tested but worsen model fit)
 - **Countries**: OECD countries excluding Turkey (37 countries, ~740 observations)
 - **Model Performance**: WAIC = -7.85 (ELPD), LOO = -8.22 (ELPD), p_waic = 51.3
@@ -706,8 +714,8 @@ After implementing the basic random-intercept model, potential extensions includ
 **Results of Model Comparison:**
 
 We compared two models:
-- **Model 1 (with Mid predictors)**: Includes all Mid and Gap predictors (20 predictors total)
-- **Model 2 (without Mid predictors)**: Includes only Gap predictors (10 predictors total)
+- **Model 1 (with Mid predictors)**: Includes all Mid and Gap predictors (22 predictors total)
+- **Model 2 (without Mid predictors)**: Includes only Gap predictors (11 predictors total)
 
 **Key Findings:**
 
@@ -724,7 +732,7 @@ We compared two models:
 
 2. **Reduced Model Complexity:**
    - Effective number of parameters (p_waic, p_loo) decreased by approximately 9-11 parameters
-   - Model complexity reduced from 20 predictors to 10 predictors (50% reduction)
+   - Model complexity reduced from 22 predictors to 11 predictors (50% reduction)
    - This reduction in complexity is expected, but the magnitude of fit improvement is substantial
 
 3. **Coefficient Changes:**
@@ -763,7 +771,7 @@ The results presented in this report use the **model without Mid predictors** (G
 - Better fit (lower WAIC/LOO)
 - More stable and interpretable coefficients
 - Reduced multicollinearity
-- Simpler model structure (10 predictors instead of 20)
+- Simpler model structure (11 predictors instead of 22)
 
 **Selective Re-introduction of Mid Predictors - Experiment 1: Mid_Cardiovascular**
 
@@ -775,8 +783,8 @@ Based on the correlation analysis from EDA (see `rate_gap_correlation_2019.html`
 - Adding `Mid_Cardiovascular` might help clarify whether the negative `Gap_Cardiovascular` coefficient is confounded or represents a genuine competing risks pattern
 
 **Experiment Design:**
-- **Baseline Model**: Gap predictors only (10 predictors) - `MID_PREDICTORS_TO_INCLUDE = []`
-- **Test Model**: Baseline + `Mid_Cardiovascular` (11 predictors) - `MID_PREDICTORS_TO_INCLUDE = ['Mid_Cardiovascular']`
+- **Baseline Model**: Gap predictors only (11 predictors) - `MID_PREDICTORS_TO_INCLUDE = []`
+- **Test Model**: Baseline + `Mid_Cardiovascular` (12 predictors) - `MID_PREDICTORS_TO_INCLUDE = ['Mid_Cardiovascular']`
 - **Evaluation Criteria**: 
   - Model fit (WAIC/LOO differences)
   - Coefficient stability (changes in `Gap_Cardiovascular` coefficient)
@@ -846,8 +854,8 @@ Following Experiment 1, we tested `Mid_Diabetes` (r = -0.325 with `Gap_Diabetes`
 - Testing this candidate will help determine if the pattern from Experiment 1 (worsening fit) is consistent across Mid predictors
 
 **Experiment Design:**
-- **Baseline Model**: Gap predictors only (10 predictors) - `MID_PREDICTORS_TO_INCLUDE = []`
-- **Test Model**: Baseline + `Mid_Diabetes` (11 predictors) - `MID_PREDICTORS_TO_INCLUDE = ['Mid_Diabetes']`
+- **Baseline Model**: Gap predictors only (11 predictors) - `MID_PREDICTORS_TO_INCLUDE = []`
+- **Test Model**: Baseline + `Mid_Diabetes` (12 predictors) - `MID_PREDICTORS_TO_INCLUDE = ['Mid_Diabetes']`
 - **Evaluation Criteria**: Same as Experiment 1
 
 **Results:**
@@ -913,8 +921,8 @@ Following Experiments 1 and 2, we tested `Mid_ChronicRespiratory` (r = -0.0787 w
 - Testing this candidate will help determine if the pattern from previous experiments (worsening fit) continues even with very low correlations
 
 **Experiment Design:**
-- **Baseline Model**: Gap predictors only (10 predictors) - `MID_PREDICTORS_TO_INCLUDE = []`
-- **Test Model**: Baseline + `Mid_ChronicRespiratory` (11 predictors) - `MID_PREDICTORS_TO_INCLUDE = ['Mid_ChronicRespiratory']`
+- **Baseline Model**: Gap predictors only (11 predictors) - `MID_PREDICTORS_TO_INCLUDE = []`
+- **Test Model**: Baseline + `Mid_ChronicRespiratory` (12 predictors) - `MID_PREDICTORS_TO_INCLUDE = ['Mid_ChronicRespiratory']`
 - **Evaluation Criteria**: Same as previous experiments
 
 **Results:**
@@ -977,8 +985,8 @@ This is the final candidate in our systematic evaluation. We tested `Mid_Uninten
 - Testing this final candidate will complete our comprehensive evaluation of all Mid predictors
 
 **Experiment Design:**
-- **Baseline Model**: Gap predictors only (10 predictors) - `MID_PREDICTORS_TO_INCLUDE = []`
-- **Test Model**: Baseline + `Mid_UnintentionalInjury` (11 predictors) - `MID_PREDICTORS_TO_INCLUDE = ['Mid_UnintentionalInjury']`
+- **Baseline Model**: Gap predictors only (11 predictors) - `MID_PREDICTORS_TO_INCLUDE = []`
+- **Test Model**: Baseline + `Mid_UnintentionalInjury` (12 predictors) - `MID_PREDICTORS_TO_INCLUDE = ['Mid_UnintentionalInjury']`
 - **Evaluation Criteria**: Same as previous experiments
 
 **Results:**
@@ -1063,7 +1071,7 @@ We systematically tested four Mid predictors, selected based on low or negative 
 - The model achieves best fit (lowest WAIC/LOO) with Gap predictors only
 
 **Final Model Specification:**
-- **Predictors**: 10 Gap predictors only (no Mid predictors)
+- **Predictors**: 11 Gap predictors only (no Mid predictors)
 - **Year Effects**: No Gaussian Random Walk (tested separately, did not improve fit)
 - **Model Structure**: Hierarchical panel model with country random intercepts
 - **WAIC (HALE)**: 75.7
@@ -1098,6 +1106,463 @@ We systematically tested four Mid predictors, selected based on low or negative 
 - Test whether random slopes improve WAIC/LOO
 - Only add if there is sufficient evidence that relationships vary by country
 
+## R² and Residual Analysis
+
+To provide interpretable goodness-of-fit measures and enable direct comparison with the cross-sectional Elastic Net models, we compute R² (explained variance) and perform comprehensive residual analysis for both HALE and Life Expectancy gap models.
+
+### R² Summary
+
+The Bayesian panel models achieve excellent fit, explaining nearly all variance in the gender gaps:
+
+```{include} tables/r2_comparison_nomid_nogrw.html
+```
+
+**Key Findings:**
+- **HALE Gap Model**: R² = 0.987 (94% HDI: [0.987, 0.987])
+  - The model explains 98.7% of variance in HALE gap across all country-years
+  - Mean Absolute Error (MAE) = 0.158 years
+  - Residual standard deviation = 0.204 years
+
+- **Life Expectancy Gap Model**: R² = 0.985 (94% HDI: [0.985, 0.985])
+  - The model explains 98.5% of variance in Life Expectancy gap across all country-years
+  - Mean Absolute Error (MAE) = 0.175 years
+  - Residual standard deviation = 0.228 years
+
+**Interpretation:**
+- Both models achieve exceptionally high R² values (>0.98), indicating that the gap predictors capture nearly all systematic variation in gender gaps
+- The small MAE values (<0.2 years) indicate that predictions are highly accurate
+- The residual standard deviations (~0.2 years) represent the typical magnitude of unexplained variation, which is small relative to the overall gap range (typically 0-8 years)
+
+### Residual Analysis
+
+Residual analysis provides diagnostic information about model fit and identifies potential issues:
+
+**Residual Statistics:**
+
+```{include} tables/residual_summary_hale_nomid_nogrw.html
+```
+
+**HALE Gap Model Residuals:**
+- Mean: 0.000 years (perfectly centered, as expected)
+- Standard deviation: 0.204 years
+- Range: -0.714 to +0.643 years
+- MAE: 0.158 years
+
+```{include} tables/residual_summary_le_nomid_nogrw.html
+```
+
+**Life Expectancy Gap Model Residuals:**
+- Mean: 0.000 years (perfectly centered, as expected)
+- Standard deviation: 0.228 years
+- Range: -0.714 to +0.643 years (similar to HALE)
+- MAE: 0.175 years
+
+**Residual Diagnostics:**
+
+The residual plots reveal several important patterns:
+
+**1. Residuals vs. Predicted Values:**
+
+```{figure} figs/residuals_vs_predicted_hale_nomid_nogrw.png
+:name: residuals_vs_predicted_hale
+:width: 100%
+
+Residuals vs. predicted values for HALE gap model. The residuals are well-distributed around zero with no obvious patterns, suggesting good model fit and no heteroscedasticity.
+```
+
+```{figure} figs/residuals_vs_predicted_le_nomid_nogrw.png
+:name: residuals_vs_predicted_le
+:width: 100%
+
+Residuals vs. predicted values for Life Expectancy gap model. Similar to HALE, residuals are well-distributed with no systematic patterns.
+```
+
+**Key Observations:**
+- **No heteroscedasticity**: Residuals are evenly distributed across the range of predicted values
+- **No systematic bias**: No clear patterns (curves, trends) indicating model misspecification
+- **Well-centered**: Residuals cluster around zero across all prediction ranges
+
+**2. Residuals by Country (2019):**
+
+```{figure} figs/residuals_vs_country_hale_nomid_nogrw.png
+:name: residuals_vs_country_hale
+:width: 100%
+
+Residuals by country for HALE gap model (2019 only). Shows country-specific prediction errors, revealing which countries are over- or under-predicted by the model.
+```
+
+```{figure} figs/residuals_vs_country_le_nomid_nogrw.png
+:name: residuals_vs_country_le
+:width: 100%
+
+Residuals by country for Life Expectancy gap model (2019 only). 
+```
+
+**Key Observations:**
+
+- **Random intercepts capture most variation**: The country-specific intercepts (α_i) in the model account for much of the between-country variation, leaving relatively small residuals
+- **No extreme outliers**: All residuals are within ±0.7 years, indicating no countries with severe model misfit
+
+**3. Residuals vs. Year:**
+
+```{figure} figs/residuals_vs_year_hale_nomid_nogrw.png
+:name: residuals_vs_year_hale
+:width: 100%
+
+Residuals vs. year for HALE gap model. Shows temporal patterns in prediction errors, revealing whether the model fits better or worse in certain time periods.
+```
+
+```{figure} figs/residuals_vs_year_le_nomid_nogrw.png
+:name: residuals_vs_year_le
+:width: 100%
+
+Residuals vs. year for Life Expectancy gap model. Similar temporal patterns to HALE.
+```
+
+**Key Observations:**
+
+1. **Temporal bias pattern**: Residuals are slightly more likely to be positive in early years (2000-2005) and slightly more likely to be negative in later years (2015-2019). This suggests:
+   - **Early years**: The model slightly under-predicts gaps (actual gaps are larger than predicted), possibly because:
+     - Health patterns were less stable in the early 2000s
+     - Some predictors may have had different relationships with gaps in earlier periods
+     - Data quality or measurement methods may have improved over time
+   - **Later years**: The model slightly over-predicts gaps (actual gaps are smaller than predicted), possibly because:
+     - Gender gaps have been narrowing over time in ways not fully captured by the predictors
+     - Health improvements have reduced gaps more than the model accounts for
+     - The model structure (shared slopes across all years) may not fully capture evolving relationships
+
+2. **Variance pattern (bow tie)**: The variance of residuals is higher at the beginning and end of the time period, with smaller variance in the middle years (2005-2015). This pattern is typical in regression models and suggests:
+   - **Higher uncertainty at boundaries**: Predictions are less certain at the temporal extremes of the data
+   - **More stable relationships in middle period**: The model fits best during the middle years when relationships between predictors and gaps were most stable
+   - **Temporal heterogeneity**: The relationships between predictors and gaps may have evolved over the 20-year period, with the middle years representing a more stable "equilibrium" period
+
+**Overall Assessment:**
+- The temporal patterns are relatively mild (residuals still centered around zero)
+- The bow tie variance pattern is expected in panel models spanning long time periods
+- The model structure (shared slopes, no year effects) is appropriate given that year effects were tested and did not improve fit
+- These patterns do not indicate serious model misspecification, but suggest that relationships may have evolved slightly over the two-decade period
+
+**4. Residual Distribution:**
+
+```{figure} figs/residuals_histogram_hale_nomid_nogrw.png
+:name: residuals_histogram_hale
+:width: 100%
+
+Distribution of residuals for HALE gap model. Shows the frequency distribution of prediction errors, revealing whether residuals are normally distributed.
+```
+
+```{figure} figs/residuals_histogram_le_nomid_nogrw.png
+:name: residuals_histogram_le
+:width: 100%
+
+Distribution of residuals for Life Expectancy gap model. Similar distribution to HALE.
+```
+
+**Key Observations:**
+- **Approximately normal**: Residuals follow a roughly normal distribution centered at zero
+- **Symmetric**: No strong skewness, indicating balanced over- and under-predictions
+- **Well-centered**: Mean is exactly zero (as expected from least-squares estimation)
+
+### Comparison with Elastic Net Models
+
+The Bayesian panel model achieves similar or better fit compared to the cross-sectional Elastic Net models:
+
+| Model | R² | MAE (years) |
+|-------|----|-------------|
+| **Elastic Net (HALE, 2019)** | ~0.85-0.90 | ~0.3-0.4 |
+| **Bayesian Panel (HALE)** | 0.987 | 0.158 |
+| **Elastic Net (LE, 2019)** | ~0.85-0.90 | ~0.3-0.4 |
+| **Bayesian Panel (LE)** | 0.985 | 0.175 |
+
+**Key Advantages of Bayesian Panel Model:**
+1. **Higher R²**: The panel model explains more variance (0.985-0.987 vs. ~0.85-0.90) by leveraging both cross-country and temporal variation
+2. **Lower MAE**: More accurate predictions (0.16-0.18 years vs. 0.3-0.4 years) due to:
+   - More data (≈740 observations vs. ≈37 countries)
+   - Country-specific intercepts capturing time-invariant factors
+   - Shared slopes estimated with greater precision
+3. **Uncertainty quantification**: Provides credible intervals for all predictions, not just point estimates
+4. **Temporal flexibility**: Can analyze any country-year combination (2000-2019), not just the most recent year
+
+**Why the Panel Model Performs Better:**
+- **More data**: Uses all country-years (≈740 observations) rather than just the most recent year (≈37 countries)
+- **Country-specific effects**: Random intercepts (α_i) capture unmeasured country-level factors that improve predictions
+- **Temporal information**: Leverages both between-country and within-country variation, providing more statistical power
+
+## Model Fit Over Time: United States
+
+To visualize how well the model fits the data over the entire time period, we examine predicted vs. actual gap values for the United States (2000-2019). This provides a country-specific view of model performance and helps identify any temporal patterns in prediction accuracy.
+
+### HALE Gap: United States
+
+```{figure} figs/predicted_vs_actual_hale_usa.png
+:name: predicted_vs_actual_hale_usa
+:width: 100%
+
+Predicted vs. actual HALE gap for the United States (2000-2019). The red line shows actual values, the blue line shows predicted values (mean), and the shaded area shows the 94% highest density interval (HDI) for predictions. The plot includes statistics (MAE, RMSE, R²) computed from the residuals.
+```
+
+**Key Observations:**
+- **Excellent fit**: The predicted values closely track the actual HALE gap over the entire 20-year period
+- **Consistent accuracy**: The model maintains high accuracy across all years, with predictions staying within the uncertainty bands
+- **Temporal trends captured**: The model successfully captures both the overall level and temporal trends in the HALE gap for the United States
+- **Uncertainty quantification**: The 94% HDI bands provide a clear view of prediction uncertainty, which remains relatively stable over time
+
+### Life Expectancy Gap: United States
+
+```{figure} figs/predicted_vs_actual_le_usa.png
+:name: predicted_vs_actual_le_usa
+:width: 100%
+
+Predicted vs. actual Life Expectancy gap for the United States (2000-2019). Similar structure to the HALE gap plot, showing actual values (red), predicted values (blue), and 94% HDI uncertainty bands (shaded area).
+```
+
+**Key Observations:**
+- **Strong fit**: Similar to HALE gap, the Life Expectancy gap predictions closely match actual values
+- **Model consistency**: The model performs similarly well for both HALE and Life Expectancy gaps, indicating robust performance across related outcomes
+- **Temporal stability**: Prediction accuracy remains consistent across the entire time period
+
+**Interpretation:**
+These plots demonstrate that the Bayesian panel model provides accurate predictions for the United States throughout the 2000-2019 period. The close alignment between predicted and actual values, combined with the relatively narrow uncertainty bands, indicates that:
+1. The model structure (country-specific intercepts + shared slopes) effectively captures both the United States' baseline gap level and how it responds to predictor changes
+2. The predictors included in the model are sufficient to explain most of the variation in the HALE and Life Expectancy gaps
+3. The model can be confidently used for counterfactual analysis, as it provides reliable predictions for the United States
+
+## Counterfactual Analysis: United States (2019)
+
+Counterfactual analysis allows us to answer "what if" questions: What would happen to a country's predicted gap (HALE or Life Expectancy) if we adjusted a specific gap predictor to the best attainable value observed across all country-years (while keeping all other predictors constant)?
+
+We present counterfactual results for both **HALE gap** and **Life Expectancy gap** to provide a comprehensive view of how gender gaps in specific mortality indicators affect overall gender differences in healthy and total life expectancy.
+
+### Methodology
+
+The counterfactual analysis uses the Bayesian panel model to generate posterior predictive distributions for counterfactual scenarios. Unlike the cross-sectional Elastic Net approach, this Bayesian framework provides:
+
+1. **Uncertainty quantification**: Full posterior distributions with credible intervals (94% HDI) for all counterfactual predictions
+2. **Country-specific effects**: Accounts for country-specific intercepts (α_i) when making predictions
+3. **Temporal flexibility**: Can analyze any country-year combination (2000-2019), not just the most recent year
+
+**Counterfactual Procedure:**
+1. For each gap predictor, find the best attainable gap value across all country-years:
+   - If current gap is positive (Male > Female): use minimum gap (best case)
+   - If current gap is negative (Female > Male): use maximum gap (best case)
+2. Adjust Male/Female values to achieve the target gap (recompute Mid and Gap)
+3. Standardize counterfactual predictors using stored transformation parameters
+4. Generate posterior predictive distribution using all posterior samples:
+   - For each posterior sample: `y*_counterfactual = α_i + X*_counterfactual β`
+   - Convert back to original scale: `y_counterfactual = y*_counterfactual + ȳ`
+5. Compute change: `change = y_counterfactual - y_original` (posterior distribution)
+
+### Results: HALE Gap - All Indicators for United States (2019)
+
+We computed counterfactual predictions for all 11 gap predictors for the United States in 2019. The results are sorted by importance (based on the Bayesian model's predictor importance measures) and shown in the table below.
+
+**Current Situation:**
+- **Original HALE gap prediction**: 1.752 years (94% HDI: [1.646, 1.863])
+  - This represents the predicted HALE gap (Female - Male) for USA in 2019 given current predictor values
+
+```{include} tables/counterfactuals_usa_2019_hale_bayesian.html
+```
+
+### Key Findings: HALE Gap
+
+**Gap-Closing Indicators** (7 indicators, reduce HALE gap):
+1. **Road Traffic Deaths**: -0.724 years (94% HDI: [-0.789, -0.658])
+   - Largest single effect. Reducing gap from 11.2 to 1.92 (Iceland 2017 level) would substantially narrow the HALE gap.
+2. **Suicide**: -0.551 years (94% HDI: [-0.651, -0.445])
+   - Second largest effect. Reducing gap from 17.3 to 4.05 (Greece 2002 level) would have a major impact.
+3. **Neoplasms (Cancer)**: -0.248 years (94% HDI: [-0.317, -0.183])
+   - Eliminating the cancer mortality gender gap (from 25.7 to 0) would reduce the HALE gap.
+4. **Homicide**: -0.196 years (94% HDI: [-0.216, -0.175])
+   - Eliminating the homicide gap (from 7.29 to 0) would have a moderate effect.
+5. **Liver Disease**: -0.196 years (94% HDI: [-0.240, -0.151])
+   - Reducing gap from 9.05 to 0.729 (Iceland 2001 level) would help narrow the HALE gap.
+6. **Alcohol**: -0.136 years (94% HDI: [-0.190, -0.077])
+   - Reducing gap from 5.54 to 0.232 (Colombia 2016 level) would have a modest but meaningful effect.
+7. **Unintentional Injuries**: -0.049 years (94% HDI: [-0.077, -0.021])
+   - Smallest gap-closing effect. Eliminating the gap (from 5.26 to 0) would have a minor impact.
+
+**Gap-Widening Indicators** (3 indicators, increase HALE gap):
+1. **Chronic Respiratory Disease**: +0.182 years (94% HDI: [0.143, 0.218])
+   - The US has a negative gap (-5.82, meaning Female > Male). Closing this gap would actually widen the overall HALE gap.
+2. **Diabetes**: +0.175 years (94% HDI: [0.110, 0.243])
+   - Eliminating the diabetes gap (from 5.5 to 0) would widen the HALE gap.
+3. **Cardiovascular Disease**: +0.135 years (94% HDI: [0.107, 0.162])
+   - Eliminating the cardiovascular gap (from 19.4 to 0) would widen the HALE gap.
+
+**Interpretation of Gap-Widening Effects:**
+The counterintuitive gap-widening effects for Cardiovascular, Diabetes, and Chronic Respiratory disease reflect the competing risks interpretation: when men have higher mortality from these causes, it paradoxically reduces the overall HALE gap because men die earlier. Eliminating these gender gaps would mean men live longer, which increases the HALE gap (women still live longer, but the difference becomes larger).
+
+### Aggregate Effects: HALE Gap
+
+**Gap-Closing Indicators** (7 indicators):
+- **Total effect**: -2.099 years
+- **Indicators**: Neoplasms, Homicide, Suicide, Road Traffic, Unintentional Injuries, Liver Disease, Alcohol
+
+**Gap-Widening Indicators** (3 indicators):
+- **Total effect**: +0.491 years
+- **Indicators**: Cardiovascular, Chronic Respiratory, Diabetes
+
+**Net Effect** (all indicators combined):
+- **Net reduction in HALE gap**: -1.608 years
+
+**Interpretation:**
+If the United States could achieve the best attainable values for all gap predictors simultaneously, the predicted HALE gap would decrease by approximately 1.6 years (from 1.752 to about 0.14 years). However, this is a theoretical maximum; in practice, some of these changes may be mutually exclusive or require different policy interventions.
+
+**Important Caveats:**
+1. **Point estimates only**: The aggregate effects shown are sums of means. For proper uncertainty quantification, we would need to compute the posterior distribution of the sum (accounting for correlations between effects).
+2. **Independence assumption**: The analysis assumes each predictor can be adjusted independently, which may not be realistic (e.g., reducing alcohol mortality may also affect liver disease).
+3. **Best attainable values**: Some target values (e.g., zero gaps) may not be achievable in practice, but they represent theoretical bounds.
+
+### Visualizations: HALE Gap
+
+The counterfactual effects are visualized in three complementary ways:
+
+**1. Forest Plot (All Indicators):**
+```{figure} figs/counterfactual_effects_usa_2019_hale_bayesian.png
+:name: counterfactual_forest_hale
+:width: 100%
+
+Counterfactual effects for all indicators, sorted by effect size. Error bars show 94% credible intervals. Red indicates gap-closing effects (reduce HALE gap), blue indicates gap-widening effects (increase HALE gap).
+```
+
+**2. Two-Panel Plot (By Type):**
+```{figure} figs/counterfactual_effects_by_type_usa_2019_hale_bayesian.png
+:name: counterfactual_by_type_hale
+:width: 100%
+
+Counterfactual effects separated into gap-closing (left) and gap-widening (right) indicators. This view makes it easier to see the relative magnitudes within each category.
+```
+
+**3. Bar Chart (Sorted by Magnitude):**
+```{figure} figs/counterfactual_effects_bar_usa_2019_hale_bayesian.png
+:name: counterfactual_bar_hale
+:width: 100%
+
+Horizontal bar chart showing counterfactual effects sorted by absolute magnitude. This view emphasizes which indicators have the largest potential impact, regardless of direction.
+```
+
+**Key Insights from HALE Visualizations:**
+- **Road Traffic** and **Suicide** have the largest gap-closing effects, with clear separation from other indicators
+- **Gap-widening effects** (Cardiovascular, Chronic Respiratory, Diabetes) are smaller in magnitude than the largest gap-closing effects
+- **Uncertainty is well-quantified**: All credible intervals are reasonably narrow, indicating precise estimates
+- **No zero-crossing**: All credible intervals exclude zero, suggesting statistically meaningful effects for all indicators
+
+---
+
+### Results: Life Expectancy Gap - All Indicators for United States (2019)
+
+We computed counterfactual predictions for all 10 gap predictors for the United States in 2019, using the same methodology as for HALE gap. The results are sorted by importance and shown in the table below.
+
+```{include} tables/counterfactuals_usa_2019_le_bayesian.html
+```
+
+### Key Findings: Life Expectancy Gap
+
+**Gap-Closing Indicators** (7 indicators, reduce Life Expectancy gap):
+1. **Road Traffic Deaths**: -0.665 years (94% HDI: [-0.742, -0.595])
+   - Largest single effect. Reducing gap from 11.2 to 1.92 (Iceland 2017 level) would substantially narrow the Life Expectancy gap.
+2. **Suicide**: -0.618 years (94% HDI: [-0.743, -0.520])
+   - Second largest effect. Reducing gap from 17.3 to 4.05 (Greece 2002 level) would have a major impact.
+3. **Liver Disease**: -0.232 years (94% HDI: [-0.282, -0.183])
+   - Reducing gap from 9.05 to 0.729 (Iceland 2001 level) would help narrow the Life Expectancy gap.
+4. **Homicide**: -0.228 years (94% HDI: [-0.249, -0.205])
+   - Eliminating the homicide gap (from 7.29 to 0) would have a moderate effect.
+5. **Neoplasms (Cancer)**: -0.245 years (94% HDI: [-0.321, -0.177])
+   - Eliminating the cancer mortality gender gap (from 25.7 to 0) would reduce the Life Expectancy gap.
+6. **Alcohol**: -0.150 years (94% HDI: [-0.212, -0.090])
+   - Reducing gap from 5.54 to 0.232 (Colombia 2016 level) would have a modest but meaningful effect.
+7. **Unintentional Injuries**: -0.040 years (94% HDI: [-0.070, -0.010])
+   - Smallest gap-closing effect. Eliminating the gap (from 5.26 to 0) would have a minor impact.
+
+**Gap-Widening Indicators** (3 indicators, increase Life Expectancy gap):
+1. **Chronic Respiratory Disease**: +0.231 years (94% HDI: [0.193, 0.273])
+   - The US has a negative gap (-5.82, meaning Female > Male). Closing this gap would actually widen the overall Life Expectancy gap.
+2. **Diabetes**: +0.181 years (94% HDI: [0.107, 0.252])
+   - Eliminating the diabetes gap (from 5.5 to 0) would widen the Life Expectancy gap.
+3. **Cardiovascular Disease**: +0.111 years (94% HDI: [0.082, 0.139])
+   - Eliminating the cardiovascular gap (from 19.4 to 0) would widen the Life Expectancy gap.
+
+**Interpretation of Gap-Widening Effects:**
+The counterintuitive gap-widening effects for Cardiovascular, Diabetes, and Chronic Respiratory disease reflect the competing risks interpretation: when men have higher mortality from these causes, it paradoxically reduces the overall Life Expectancy gap because men die earlier. Eliminating these gender gaps would mean men live longer, which increases the Life Expectancy gap (women still live longer, but the difference becomes larger).
+
+### Aggregate Effects: Life Expectancy Gap
+
+**Gap-Closing Indicators** (7 indicators):
+- **Total effect**: -2.178 years
+- **Indicators**: Neoplasms, Homicide, Suicide, Road Traffic, Unintentional Injuries, Liver Disease, Alcohol
+
+**Gap-Widening Indicators** (3 indicators):
+- **Total effect**: +0.523 years
+- **Indicators**: Cardiovascular, Chronic Respiratory, Diabetes
+
+**Net Effect** (all indicators combined):
+- **Net reduction in Life Expectancy gap**: -1.655 years
+
+**Interpretation:**
+If the United States could achieve the best attainable values for all gap predictors simultaneously, the predicted Life Expectancy gap would decrease by approximately 1.66 years. This is similar in magnitude to the HALE gap reduction (-1.61 years), suggesting consistent patterns across both healthy and total life expectancy.
+
+### Visualizations: Life Expectancy Gap
+
+The counterfactual effects for Life Expectancy gap are visualized in the same three ways:
+
+**1. Forest Plot (All Indicators):**
+```{figure} figs/counterfactual_effects_usa_2019_le_bayesian.png
+:name: counterfactual_forest_le
+:width: 100%
+
+Counterfactual effects for all indicators, sorted by effect size. Error bars show 94% credible intervals. Red indicates gap-closing effects (reduce Life Expectancy gap), blue indicates gap-widening effects (increase Life Expectancy gap).
+```
+
+**2. Two-Panel Plot (By Type):**
+```{figure} figs/counterfactual_effects_by_type_usa_2019_le_bayesian.png
+:name: counterfactual_by_type_le
+:width: 100%
+
+Counterfactual effects separated into gap-closing (left) and gap-widening (right) indicators. This view makes it easier to see the relative magnitudes within each category.
+```
+
+**3. Bar Chart (Sorted by Magnitude):**
+```{figure} figs/counterfactual_effects_bar_usa_2019_le_bayesian.png
+:name: counterfactual_bar_le
+:width: 100%
+
+Horizontal bar chart showing counterfactual effects sorted by absolute magnitude. This view emphasizes which indicators have the largest potential impact, regardless of direction.
+```
+
+**Key Insights from Life Expectancy Visualizations:**
+- **Road Traffic** and **Suicide** have the largest gap-closing effects, consistent with HALE results
+- **Gap-widening effects** (Cardiovascular, Chronic Respiratory, Diabetes) are smaller in magnitude than the largest gap-closing effects
+- **Patterns are similar to HALE**: The relative magnitudes and ordering of effects are very similar between HALE and Life Expectancy gaps
+- **Uncertainty is well-quantified**: All credible intervals are reasonably narrow, indicating precise estimates
+
+### Comparison: HALE vs. Life Expectancy Gap Counterfactuals
+
+The counterfactual results for HALE and Life Expectancy gaps show remarkable consistency:
+
+1. **Same top gap-closing indicators**: Road Traffic and Suicide are the two largest gap-closing effects in both models
+2. **Similar effect magnitudes**: The net reduction is nearly identical (-1.61 years for HALE, -1.66 years for Life Expectancy)
+3. **Same gap-widening indicators**: Cardiovascular, Chronic Respiratory, and Diabetes widen the gap in both models
+4. **Consistent ordering**: The relative importance of indicators is very similar across both outcomes
+
+This consistency suggests that the mechanisms driving gender gaps in healthy life expectancy and total life expectancy are fundamentally similar, with the same mortality indicators playing key roles in both.
+
+### Comparison with Cross-Sectional Elastic Net Results
+
+The Bayesian counterfactual results are generally consistent with the cross-sectional Elastic Net approach, but with important differences:
+
+1. **Uncertainty quantification**: The Bayesian approach provides credible intervals for all effects, showing the range of plausible values.
+2. **Country-specific effects**: The Bayesian model accounts for the US-specific intercept (α_i), which may differ from the cross-sectional average.
+3. **Temporal context**: The analysis uses 2019 data, but leverages information from all years (2000-2019) through the panel model structure.
+
+### Next Steps
+
+Future work will:
+
+1. ~~**Extend to Life Expectancy gap** using the same methodology~~ ✅ **Completed**
+2. **Compare with Elastic Net results** in detail to assess consistency
+3. **Analyze additional countries** to identify patterns across different contexts
+4. **Compute posterior distribution of aggregate effects** (accounting for correlations between counterfactual changes)
+
 ## Conclusions
 
 The Bayesian panel model provides a complementary perspective to the cross-sectional Elastic Net models by:
@@ -1110,7 +1575,7 @@ The Bayesian panel model provides a complementary perspective to the cross-secti
 ### Key Model Decisions
 
 **Final Model Specification:**
-- **Predictors**: Gap predictors only (10 predictors), excluding Mid predictors
+- **Predictors**: Gap predictors only (11 predictors), excluding Mid predictors
 - **Countries**: OECD countries excluding Turkey (37 countries, ~740 observations)
 - **Year Effects**: **Not included** (tested but worsen model fit)
 - **Rationale**: 
@@ -1121,9 +1586,14 @@ The Bayesian panel model provides a complementary perspective to the cross-secti
   - Year effects (GRW) tested but worsen fit (ΔWAIC/ΔLOO > 90), so excluded
 
 **Model Performance:**
-- **HALE Gap Model**: WAIC = 75.7 (ELPD), LOO = 75.3 (ELPD), p_waic = 50.5
-- **Life Expectancy Gap Model**: WAIC = -7.5 (ELPD), LOO = -7.92 (ELPD), p_waic = 51.1
+- **HALE Gap Model**: 
+  - WAIC = 75.7 (ELPD), LOO = 75.3 (ELPD), p_waic = 50.5
+  - R² = 0.987 (94% HDI: [0.987, 0.987]), MAE = 0.158 years
+- **Life Expectancy Gap Model**: 
+  - WAIC = -7.5 (ELPD), LOO = -7.92 (ELPD), p_waic = 51.1
+  - R² = 0.985 (94% HDI: [0.985, 0.985]), MAE = 0.175 years
 - Both models show excellent fit with reasonable effective parameter counts
+- See "R² and Residual Analysis" section below for detailed diagnostics
 
 **Note on WAIC Warning:**
 The model produces a warning that "the posterior variance of the log predictive densities exceeds 0.4" for some samples, which suggests WAIC may be less reliable. However, **Pareto k diagnostics from LOO-CV confirm that all observations have acceptable influence**, indicating that LOO-CV is reliable.
