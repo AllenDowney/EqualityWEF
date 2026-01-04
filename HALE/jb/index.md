@@ -8,7 +8,9 @@ This project explores differences in life expectancy and health-adjusted life ex
 
 ## Contents
 
-- [Technical Report](tech_report.md) - Analysis of the gender gap in life expectancy and HALE, including methodology, results, and counterfactual analysis.
+- [Bayesian Panel Data Model](bayesian_model_report_2021.md) - **Primary analysis**: Bayesian hierarchical panel model analyzing HALE and Life Expectancy gender gaps using both temporal variation (2000-2021) and cross-country variation simultaneously. Provides posterior distributions for all parameters with uncertainty quantification and enables temporal counterfactual analysis.
+
+- [Technical Report](tech_report.md) - Exploratory analysis using Elastic Net regression, developed as part of the model development process. Includes methodology, results, and counterfactual analysis using cross-sectional models.
 
 - [Data Inventory](data_inventory.md) - Data sources and metadata.
 
@@ -22,13 +24,17 @@ This project explores differences in life expectancy and health-adjusted life ex
 
 - [Temporal Analysis](temporal.md) - Evolution of health patterns and gender gaps over time (2000-2019). Runs predictive models at five-year intervals (2000, 2005, 2010, 2015, 2019) and compares results to examine how indicator importance and intervention opportunities have changed.
 
-- [Bayesian Panel Data Model](bayesian_model_report.md) - Bayesian hierarchical panel model analyzing HALE and Life Expectancy gender gaps using both temporal variation (2000-2019) and cross-country variation simultaneously. Provides posterior distributions for all parameters and enables temporal counterfactual analysis.
-
 ## Methodology
 
-We use Elastic Net regression to model the gender gap in life expectancy and HALE as a function of cause-specific mortality indicators. This approach handles the high correlation among predictors and identifies which patterns of mortality are most strongly associated with the life expectancy gap.
+Our primary analysis uses a **Bayesian hierarchical panel model** to analyze the gender gap in life expectancy and HALE. This approach leverages both temporal variation (2000-2021) and cross-country variation simultaneously, providing several advantages:
 
-The analysis focuses on OECD countries (38 countries) using the most recent available data from 2000-2019, excluding 2020 and later years to avoid distortions from the COVID-19 pandemic.
+- **Uncertainty quantification**: All parameter estimates include posterior distributions with credible intervals
+- **Country-specific effects**: Accounts for unobserved country-level heterogeneity through random intercepts
+- **Robust inference**: Handles correlation among predictors while quantifying uncertainty in all estimates
+
+The analysis focuses on OECD countries (38 countries) using data from 2000-2021, including the COVID-19 pandemic period to understand its impact on gender gaps in health outcomes.
+
+During the development process, we also explored Elastic Net regression models (see the [Technical Report](tech_report.md)) to identify key predictors and validate our approach. These cross-sectional models helped inform the Bayesian panel model specification and provided initial insights into which cause-specific mortality indicators are most strongly associated with the gender gap.
 
 We validate our results by comparing models using WHO indicators with models using IHME indicators, ensuring that conclusions remain stable across data sources. See the [Validation Experiments](validation.md) for details.
 
@@ -51,5 +57,5 @@ The analysis identifies several key factors that contribute to the gender gap in
 - Alcohol-attributable deaths are the second most important factor
 - Chronic respiratory disease, unintentional injuries, and other cause-specific mortality patterns also contribute
 
-For detailed findings and counterfactual analysis, see the [Technical Report](tech_report.md).
+For detailed findings, counterfactual analysis, and uncertainty quantification, see the [Bayesian Panel Data Model](bayesian_model_report_2021.md) report. For exploratory analysis using Elastic Net regression, see the [Technical Report](tech_report.md).
 

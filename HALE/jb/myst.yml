@@ -24,8 +24,8 @@ project:
       title: Time Series Analysis
     - file: temporal.md
       title: Temporal Analysis
-    - file: bayesian_model_report.md
-      title: Bayesian Panel Data Model
+    - file: bayesian_model_report_2021.md
+      title: Bayesian Panel Data Model (2000-2021)
 
 site:
   template: book-theme
