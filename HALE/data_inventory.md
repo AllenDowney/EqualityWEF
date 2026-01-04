@@ -919,6 +919,47 @@ Data for investigating specific drivers of gender gaps within broader categories
 
 **Relevance**: HALE measures the average number of years that a person can expect to live in "full health" by taking into account years lived in less than full health due to disease and/or injury. This is the **primary target variable** for the analysis. The gender gap (Female HALE - Male HALE) measures the difference in healthy life expectancy between women and men.
 
+### IHME HALE (Healthy Life Expectancy) - Alternative Target Variable Source
+
+**Indicator**: HALE (Healthy life expectancy)  
+**Source**: IHME Global Burden of Disease (GBD) 2023  
+**File**: `data/IHME-GBD_2023_DATA-fc42b373-1.csv`  
+**Status**: ⚠️ Downloaded, exploration pending
+
+**Data Details**:
+- **Records**: 13,872 (HALE data only)
+- **Years**: 1990-2023 (34 years)
+- **Countries**: 204
+- **Sex categories**: Male, Female (no "Both sexes" category)
+- **Coverage**: Superior temporal coverage compared to WHO (starts 1990, includes 2022-2023), more countries (204 vs 196)
+
+**Data Structure**:
+- **Columns**: `measure_id`, `measure_name`, `location_id`, `location_name`, `sex_id`, `sex_name`, `age_id`, `age_name`, `metric_id`, `metric_name`, `year`, `val`, `upper`, `lower`
+- **Measure**: HALE (Healthy life expectancy) only in this dataset
+- **Age**: All ages (matches WHO methodology)
+- **Metric**: Years
+- **Uncertainty bounds**: Yes (upper/lower columns)
+
+**Advantages over WHO HALE data**:
+1. **More years**: 1990-2023 (34 years) vs WHO 2000-2021 (22 years)
+2. **More recent data**: Includes 2022-2023 (WHO stops at 2021)
+3. **More countries**: 204 vs 196
+4. **Consistent methodology**: Same uncertainty bounds structure as other IHME indicators used in the model
+5. **Earlier start date**: 1990 vs 2000 allows for longer temporal analysis
+
+**Considerations**:
+- **No "Both sexes" category**: Only has Male and Female. For gender gap analysis this is fine (we primarily need Male and Female), but "Both sexes" can be computed as a weighted average if needed.
+- **Column names differ**: Column structure differs from WHO format (`location_name` vs `Country`, `val` vs `HALE_Years`, `upper`/`lower` vs `HALE_High`/`HALE_Low`), so code will need updates to use this data source.
+- **Country name mapping**: May need country name standardization to match existing mappings (similar to other IHME indicators).
+
+**Relevance**: IHME HALE data could potentially replace WHO HALE data in the model, providing better temporal coverage (especially for recent years 2022-2023) and more countries. This would be particularly valuable for:
+- Extending analysis to more recent years (2022-2023)
+- Longer temporal analysis (starting from 1990)
+- Consistency with other IHME predictor indicators used in the model
+- Better alignment with IHME COVID-19 data (which extends to 2023)
+
+**Citation**: Global Burden of Disease Collaborative Network. Global Burden of Disease Study 2023 (GBD 2023) Results. Seattle, United States: Institute for Health Metrics and Evaluation (IHME), 2024. Available from https://vizhub.healthdata.org/gbd-results/.
+
 ### Life Expectancy - Secondary Target Variable
 
 **Indicator**: WHOSIS_000001 - Life expectancy at birth (years)  

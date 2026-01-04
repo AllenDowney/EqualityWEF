@@ -64,7 +64,7 @@ def compute_gap_extremes(panel_df):
 
 def counterfactual_predictions_bayesian(
     country, year, gap_predictor, trace, metadata, panel_df, gap_extremes, 
-    country_to_idx, year_to_idx
+    country_to_idx, year_to_idx, target_zero=False
 ):
     """
     Generate counterfactual prediction by adjusting a gap predictor to best attainable value.
@@ -89,6 +89,8 @@ def counterfactual_predictions_bayesian(
         Dictionary mapping country codes to indices
     year_to_idx : dict
         Dictionary mapping years to indices
+    target_zero : bool, default False
+        If True, always set target gap to zero. If False, use best attainable value.
         
     Returns
     -------
@@ -115,23 +117,30 @@ def counterfactual_predictions_bayesian(
     # Get current gap value
     current_gap = current_row[gap_predictor]
     
-    # Determine target gap based on current gap sign
-    if current_gap > 0:
-        # Positive gap: find minimum gap (best case: smallest positive gap)
-        target_gap = gap_extremes[gap_predictor]['min_gap']
-        target_country = gap_extremes[gap_predictor]['min_country']
-        target_year = gap_extremes[gap_predictor]['min_year']
-    else:
-        # Negative gap: find maximum gap (best case: largest positive gap)
-        target_gap = gap_extremes[gap_predictor]['max_gap']
-        target_country = gap_extremes[gap_predictor]['max_country']
-        target_year = gap_extremes[gap_predictor]['max_year']
-    
-    # If target gap has opposite sign of current gap, set target to zero
-    if (current_gap > 0 and target_gap < 0) or (current_gap < 0 and target_gap > 0):
+    # Determine target gap
+    if target_zero:
+        # Always target zero gap
         target_gap = 0.0
         target_country = ""
         target_year = None
+    else:
+        # Determine target gap based on current gap sign
+        if current_gap > 0:
+            # Positive gap: find minimum gap (best case: smallest positive gap)
+            target_gap = gap_extremes[gap_predictor]['min_gap']
+            target_country = gap_extremes[gap_predictor]['min_country']
+            target_year = gap_extremes[gap_predictor]['min_year']
+        else:
+            # Negative gap: find maximum gap (best case: largest positive gap)
+            target_gap = gap_extremes[gap_predictor]['max_gap']
+            target_country = gap_extremes[gap_predictor]['max_country']
+            target_year = gap_extremes[gap_predictor]['max_year']
+        
+        # If target gap has opposite sign of current gap, set target to zero
+        if (current_gap > 0 and target_gap < 0) or (current_gap < 0 and target_gap > 0):
+            target_gap = 0.0
+            target_country = ""
+            target_year = None
     
     # Reconstruct current Male/Female from Mid and Gap
     mid_col = f'Mid_{indicator_name}'
@@ -723,4 +732,339 @@ def plot_predicted_vs_actual_over_time(
     plt.show()
     
     return fig, ax
+
+
+def compute_positive_contributions_over_time(
+    country, trace, metadata, panel_df, gap_extremes,
+    country_to_idx, year_to_idx, target_name='gap',
+    target_col=None, reference_year=None, counterfactual_results=None,
+    counterfactuals_full=None
+):
+    """
+    Compute positive-contributing factors (gap-closing) over time for a country.
+    
+    Parameters
+    ----------
+    country : str
+        Country code (e.g., 'USA')
+    trace : arviz.InferenceData
+        Posterior trace from Bayesian model
+    metadata : dict
+        Model metadata with X_mean, X_std, y_mean, predictors, countries
+    panel_df : pd.DataFrame
+        Panel dataset with country, Year, and target_col columns
+    gap_extremes : dict
+        Dictionary with gap extremes for each predictor
+    country_to_idx : dict
+        Mapping from country codes to indices
+    year_to_idx : dict
+        Mapping from years to indices
+    target_name : str
+        Name of target variable for labels (e.g., 'HALE gap' or 'Life Expectancy gap')
+    target_col : str
+        Column name in panel_df for target variable (e.g., 'HALE_gap' or 'LE_gap').
+        If None, will infer from target_name.
+    reference_year : int, optional
+        Year to use for identifying gap-closing factors. If None, uses the latest
+        available year in the data.
+    counterfactual_results : list, optional
+        Pre-computed counterfactual results from the main analysis. If provided,
+        these will be used to identify gap-closing factors instead of recomputing.
+    counterfactuals_full : pd.DataFrame, optional
+        Pre-computed full counterfactuals DataFrame. If provided, will be used
+        to identify gap-closing factors (ensures exact consistency with aggregate effects).
+        Takes precedence over counterfactual_results if both are provided.
+        
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with years as index, gap-closing factors as columns, plus
+        'Predicted Total' and 'Actual Total' columns
+    """
+    # Infer target column if not provided
+    if target_col is None:
+        if 'HALE' in target_name:
+            target_col = 'HALE_gap'
+        elif 'Life Expectancy' in target_name or 'LE' in target_name:
+            target_col = 'LE_gap'
+        else:
+            raise ValueError(f"Cannot infer target_col from target_name: {target_name}")
+    
+    # Get all years for country
+    country_data = panel_df[panel_df['country'] == country].copy()
+    country_years = sorted(country_data['Year'].unique())
+    
+    # Determine reference year: use latest available year
+    if reference_year is None:
+        reference_year = max(country_years)
+    
+    print(f"Computing contributions for {country} across {len(country_years)} years...")
+    print(f"Using {reference_year} as reference year for identifying gap-closing factors")
+    
+    # Identify gap-closing factors
+    if counterfactuals_full is not None:
+        # Use pre-computed counterfactuals_full DataFrame (most reliable - ensures exact consistency)
+        # Filter to gap-closing factors (negative change = reduces gap)
+        gap_closing = counterfactuals_full[counterfactuals_full['Change mean'] < 0].copy()
+        gap_closing_factors = gap_closing['Indicator'].tolist()
+        print(f"Using pre-computed counterfactuals_full DataFrame to identify gap-closing factors")
+    elif counterfactual_results is not None:
+        # Use pre-computed counterfactual results
+        # Filter to gap-closing factors (negative change = reduces gap)
+        # Exclude COVID from gap-closing factors (check both indicator name and gap predictor name)
+        gap_closing_factors = []
+        for r in counterfactual_results:
+            indicator = r['indicator']
+            gap_pred = f'Gap_{indicator}'
+            # Exclude COVID variants
+            if indicator in ['COVID', 'COVID19'] or gap_pred in ['Gap_COVID', 'Gap_COVID19']:
+                continue
+            # Only include gap-closing factors (negative change)
+            if r['change_summary']['mean'] < 0:
+                gap_closing_factors.append(indicator)
+        print(f"Using pre-computed counterfactual results to identify gap-closing factors")
+    else:
+        # Compute counterfactual results for reference year
+        gap_predictors = [col for col in panel_df.columns if col.startswith('Gap_')]
+        # Exclude COVID from gap-closing factors (it widens the gap)
+        gap_predictors = [p for p in gap_predictors if p not in ['Gap_COVID', 'Gap_COVID19']]
+        
+        reference_results = []
+        for gap_pred in gap_predictors:
+            # Check if this predictor exists in the model
+            if gap_pred not in metadata['predictors']:
+                continue
+            result = counterfactual_predictions_bayesian(
+                country, reference_year, gap_pred,
+                trace, metadata, panel_df, gap_extremes,
+                country_to_idx, year_to_idx
+            )
+            reference_results.append(result)
+        
+        # Identify gap-closing factors (negative change = reduces gap)
+        gap_closing_factors = [
+            r['indicator'] for r in reference_results 
+            if r['change_summary']['mean'] < 0
+        ]
+    
+    print(f"Found {len(gap_closing_factors)} gap-closing factors:")
+    print(f"  {', '.join(gap_closing_factors)}")
+    
+    # Get transformation parameters
+    X_mean = np.array(metadata['X_mean'])
+    X_std = np.array(metadata['X_std'])
+    y_mean = metadata['y_mean']
+    predictors = metadata['predictors']
+    countries = np.array(metadata['countries'])
+    
+    # Get country index
+    country_idx_val = country_to_idx[country]
+    
+    # Extract posterior samples
+    beta_samples = trace.posterior['beta'].values.reshape(-1, len(predictors))
+    alpha_samples = trace.posterior['alpha'].values.reshape(-1, len(countries))
+    alpha_i_samples = alpha_samples[:, country_idx_val]
+    
+    # Compute contributions for each year
+    contributions_data = []
+    predicted_means = []
+    actual_values = []
+    
+    for year in country_years:
+        year_data = country_data[country_data['Year'] == year]
+        if len(year_data) == 0:
+            continue
+        
+        # Get actual value
+        actual_gap = year_data[target_col].iloc[0]
+        actual_values.append(actual_gap)
+        
+        # Compute predicted gap for this year
+        current_row = year_data.iloc[0]
+        X_current = np.array([current_row[p] for p in predictors])
+        X_current_std = (X_current - X_mean) / X_std
+        
+        pred_centered = alpha_i_samples + np.dot(X_current_std, beta_samples.T)
+        pred_original = pred_centered + y_mean
+        pred_mean = np.mean(pred_original)
+        predicted_means.append(pred_mean)
+        
+        # Compute contributions for each gap-closing factor
+        year_contributions = {'Year': year}
+        
+        for indicator in gap_closing_factors:
+            gap_pred = f'Gap_{indicator}'
+            # All indicators in gap_closing_factors should be valid since they come from counterfactual_results
+            # which were already computed successfully. But check anyway to be safe.
+            if gap_pred not in metadata['predictors']:
+                print(f"Warning: {gap_pred} not in model predictors, skipping")
+                continue
+            result = counterfactual_predictions_bayesian(
+                country, year, gap_pred,
+                trace, metadata, panel_df, gap_extremes,
+                country_to_idx, year_to_idx,
+                target_zero=True
+            )
+            # Contribution is the absolute value of the change (since change is negative)
+            contribution = abs(result['change_summary']['mean'])
+            year_contributions[indicator] = contribution
+        
+        contributions_data.append(year_contributions)
+    
+    # Create DataFrame
+    contributions_df = pd.DataFrame(contributions_data)
+    contributions_df = contributions_df.set_index('Year')
+    
+    # Add predicted and actual totals
+    contributions_df['Predicted Total'] = predicted_means
+    contributions_df['Actual Total'] = actual_values
+    
+    print(f"\nContributions DataFrame shape: {contributions_df.shape}")
+    print(f"Years: {contributions_df.index.min()} - {contributions_df.index.max()}")
+    
+    return contributions_df
+
+
+def plot_positive_contributions_stacked_area(
+    contributions_df, target_name='gap', country='USA',
+    output_filename=None
+):
+    """
+    Plot stacked area chart of positive contributions over time.
+    
+    Parameters
+    ----------
+    contributions_df : pd.DataFrame
+        DataFrame from compute_positive_contributions_over_time
+    target_name : str
+        Name of target variable for labels (e.g., 'HALE gap' or 'Life Expectancy gap')
+    country : str
+        Country code for title
+    output_filename : str or Path, optional
+        Filename to save the figure. If None, figure is not saved.
+        
+    Returns
+    -------
+    fig, ax : matplotlib figure and axes
+    """
+    fig, ax = plt.subplots(figsize=(14, 8))
+    
+    # Get factor columns (exclude totals)
+    factor_cols = [col for col in contributions_df.columns 
+                   if col not in ['Predicted Total', 'Actual Total']]
+    
+    # Sort factors by total contribution (sum across all years)
+    factor_totals = contributions_df[factor_cols].sum().sort_values(ascending=False)
+    factor_cols_sorted = factor_totals.index.tolist()
+    
+    # Create color map for factors
+    n_factors = len(factor_cols_sorted)
+    colors = plt.cm.Set3(np.linspace(0, 1, n_factors))
+    
+    # Plot stacked area chart for factors
+    ax.stackplot(contributions_df.index, 
+                 *[contributions_df[col] for col in factor_cols_sorted],
+                 labels=factor_cols_sorted,
+                 colors=colors,
+                 alpha=0.7)
+    
+    # Plot predicted and actual totals as lines
+    ax.plot(contributions_df.index, contributions_df['Predicted Total'], 
+            'o-', color=AIBM_COLORS['blue'], linewidth=2.5, markersize=8,
+            label='Predicted Total', zorder=10)
+    ax.plot(contributions_df.index, contributions_df['Actual Total'], 
+            's-', color=AIBM_COLORS['crimson'], linewidth=2.5, markersize=8,
+            label='Actual Total', zorder=10)
+    
+    # Formatting
+    country_name = code_to_who_country.get(country, country)
+    ax.set_xlabel('Year', fontsize=12)
+    ax.set_ylabel(f'{target_name} (years)', fontsize=12)
+    ax.set_title(f'Positive-Contributing Factors Over Time: {country_name}\n(Stacked Contributions + Predicted/Actual Totals)', 
+                 fontsize=14, fontweight='bold')
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=9, ncol=1)
+    ax.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    
+    if output_filename:
+        plt.savefig(output_filename, dpi=300, bbox_inches='tight')
+    
+    plt.show()
+    
+    return fig, ax
+
+
+def plot_positive_contributions_percentage(
+    contributions_df, target_name='gap', country='USA',
+    output_filename=None
+):
+    """
+    Plot total positive contributions as percentage of actual gap over time.
+    
+    Parameters
+    ----------
+    contributions_df : pd.DataFrame
+        DataFrame from compute_positive_contributions_over_time
+    target_name : str
+        Name of target variable for labels (e.g., 'HALE gap' or 'Life Expectancy gap')
+    country : str
+        Country code for title
+    output_filename : str or Path, optional
+        Filename to save the figure. If None, figure is not saved.
+        
+    Returns
+    -------
+    fig, ax : matplotlib figure and axes
+    pd.Series : percentage values over time
+    """
+    # Get factor columns (exclude totals)
+    factor_cols = [col for col in contributions_df.columns 
+                   if col not in ['Predicted Total', 'Actual Total']]
+    
+    # Sum all positive-contributing factors for each year
+    total_positive_contributions = contributions_df[factor_cols].sum(axis=1)
+    
+    # Compute percentage of actual gap
+    percentage_of_actual = (total_positive_contributions / contributions_df['Actual Total']) * 100
+    
+    # Create plot
+    fig, ax = plt.subplots(figsize=(12, 6))
+    
+    ax.plot(contributions_df.index, percentage_of_actual, 
+            'o-', color=AIBM_COLORS['green'], linewidth=2.5, markersize=8)
+    
+    ax.set_xlabel('Year', fontsize=12)
+    ax.set_ylabel('Percentage of Actual Gap', fontsize=12)
+    country_name = code_to_who_country.get(country, country)
+    ax.set_title(f'Total Positive-Contributing Factors as Percentage of Actual {target_name}\n{country_name} Over Time', 
+                 fontsize=14, fontweight='bold')
+    ax.grid(True, alpha=0.3)
+    
+    # Add horizontal line at 100% for reference
+    ax.axhline(y=100, color='gray', linestyle='--', linewidth=1, alpha=0.5, label='100%')
+    
+    # Add text annotation with summary statistics
+    mean_pct = percentage_of_actual.mean()
+    ax.text(0.02, 0.98, f'Mean: {mean_pct:.1f}%', transform=ax.transAxes, 
+            fontsize=10, verticalalignment='top',
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+    
+    ax.legend(loc='best', fontsize=10)
+    
+    plt.tight_layout()
+    
+    if output_filename:
+        plt.savefig(output_filename, dpi=300, bbox_inches='tight')
+    
+    plt.show()
+    
+    # Display summary statistics
+    print(f"\nSummary Statistics:")
+    print(f"  Mean percentage: {mean_pct:.2f}%")
+    print(f"  Min percentage: {percentage_of_actual.min():.2f}%")
+    print(f"  Max percentage: {percentage_of_actual.max():.2f}%")
+    print(f"  Range: {percentage_of_actual.max() - percentage_of_actual.min():.2f} percentage points")
+    
+    return fig, ax, percentage_of_actual
 

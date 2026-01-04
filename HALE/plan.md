@@ -400,6 +400,70 @@ The following recommendations are organized by priority and relevance:
   - ✅ **EDA updated**: Life Expectancy data loading and exploration added to `eda.md`
   - ✅ **HDF5 updated**: Both `target_hale` and `target_le` saved to HDF5 file for modeling
 
+**Step 1.2a: Explore IHME HALE Data as Alternative Source** ⚠️ **PENDING**
+- **File**: `data/IHME-GBD_2023_DATA-fc42b373-1.csv`
+- **Status**: Downloaded, exploration pending
+- **Purpose**: Evaluate IHME HALE data as a potential replacement for WHO HALE data
+
+**Exploration Steps**:
+1. **Data Structure Comparison**:
+   - Load IHME HALE data: `data/IHME-GBD_2023_DATA-fc42b373-1.csv`
+   - Compare structure with WHO HALE data:
+     - Column mapping: `location_name` → `Country`, `val` → `HALE_Years`, `upper`/`lower` → `HALE_High`/`HALE_Low`
+     - Sex categories: IHME has "Male"/"Female" vs WHO has "SEX_MLE"/"SEX_FMLE"/"SEX_BTSX"
+     - Year range: IHME 1990-2023 vs WHO 2000-2021
+     - Country coverage: Compare country lists and identify any differences
+
+2. **Data Quality Assessment**:
+   - Check for missing values by country and year
+   - Compare HALE values for overlapping years (2000-2021) between IHME and WHO
+   - Calculate correlation between IHME and WHO HALE values for same country-year-sex combinations
+   - Identify any systematic differences or biases between sources
+
+3. **Country Name Mapping**:
+   - Map IHME country names to match existing country name mappings (similar to other IHME indicators)
+   - Check for countries in IHME that are not in WHO (and vice versa)
+   - Verify OECD country coverage in IHME data
+
+4. **Gender Gap Calculation**:
+   - Compute gender gaps using IHME data: `HALE_gap_ihme = HALE_Years_Female - HALE_Years_Male`
+   - Compare IHME gender gaps with WHO gender gaps for overlapping years
+   - Check for systematic differences in gap calculations
+
+5. **Temporal Coverage Analysis**:
+   - Assess value of additional years (1990-1999, 2022-2023) for analysis
+   - Determine if extended temporal coverage would improve model performance
+   - Consider implications for COVID-19 analysis (IHME extends to 2023, allowing more recent data)
+
+6. **Integration Planning**:
+   - Create conversion function to transform IHME HALE data to match WHO format (if proceeding with swap)
+   - Update data loading functions to support both WHO and IHME sources
+   - Plan for backward compatibility if keeping both sources available
+
+**Decision Criteria for Swapping**:
+- **Proceed with swap if**:
+  - IHME and WHO values are highly correlated (r > 0.95) for overlapping years
+  - No systematic biases or large discrepancies found
+  - Extended temporal coverage (1990-2023) provides value for analysis
+  - Country coverage is equal or better in IHME
+  - Integration is straightforward with minimal code changes
+
+- **Keep WHO if**:
+  - Significant discrepancies or biases found between sources
+  - WHO data quality is superior for key countries/years
+  - Integration would require extensive code refactoring
+  - "Both sexes" category is needed and cannot be easily computed from IHME
+
+**Implementation Steps (if swap is approved)**:
+1. Create `load_ihme_hale_data()` function in data loading module
+2. Update `summarize_gap()` to handle IHME format
+3. Replace WHO HALE data loading with IHME in `eda.md`
+4. Re-run data preparation pipeline with IHME data
+5. Update HDF5 file with new IHME-based target variables
+6. Re-run models with IHME HALE data and compare results
+7. Document any changes in model performance or importance rankings
+8. Update data inventory to reflect IHME as primary source
+
 **Step 1.3: Download and Prepare Predictor Variables** ✅ **COMPLETE**
 For each predictor, load data and use `summarize_gap()` to get most recent year per country. **Use Mid (midpoint) and Gap columns as predictors** (not separate Male/Female columns), except for female-only indicators (maternal mortality):
 
@@ -1328,10 +1392,10 @@ After implementing the basic random-intercept model, consider these extensions:
   - **Importance measure**: Which predictors contribute most given their typical variation (1 SD)? (matches Elastic Net, units: years)
 - **Why this matters**: A predictor with a large standardized coefficient might have small importance if its SD is small, or vice versa. The importance measure accounts for both effect size and typical variation, providing a better ranking for policy interventions.
 
-**(B) Counterfactual Analysis:** ⏳ **TO DO** (Next Step)
+**(B) Counterfactual Analysis:** ✅ **COMPLETE**
 
 **Overview:**
-Adapt the Elastic Net counterfactual approach to the Bayesian panel model framework. The key differences are:
+Adapted the Elastic Net counterfactual approach to the Bayesian panel model framework. The key differences are:
 - Use posterior distributions (not just point estimates) to quantify uncertainty
 - Account for country-specific intercepts (α_i) when making predictions
 - Standardize predictors using stored transformation parameters from `prepare_panel_data()`
@@ -1413,25 +1477,43 @@ Adapt the Elastic Net counterfactual approach to the Bayesian panel model framew
 
 **Deliverables:**
 
-1. **Counterfactual Function**: `counterfactual_predictions_bayesian(country, year, gap_predictor, trace, data)`
+1. **Counterfactual Function**: ✅ `counterfactual_predictions_bayesian(country, year, gap_predictor, trace, data)` - Implemented in `counterfactual_utils.py`
    - Returns dictionary with posterior distributions of original prediction, counterfactual prediction, and change
+   - Added `target_zero` parameter to allow comparison to zero gap as an option
 
-2. **Counterfactual Table Function**: `counterfactuals_for_country_year_bayesian(country, year, trace, data, importance_summary)`
+2. **Counterfactual Table Function**: ✅ `format_counterfactual_table()` - Implemented in `counterfactual_utils.py`
    - Returns DataFrame with counterfactual results for all gap predictors, sorted by importance
+   - Includes uncertainty columns (94% HDI) for all predictions
 
-3. **HTML Tables**: Export counterfactual tables for example countries (e.g., USA in 2019)
+3. **HTML Tables**: ✅ Export counterfactual tables for example countries (e.g., USA in latest year)
    - Include uncertainty columns (94% HDI) for all predictions
-   - Format: `counterfactuals_usa_2019_hale_bayesian.html`
+   - Format: `counterfactuals_usa_2021_hale_bayesian.html`, `counterfactuals_usa_2021_le_bayesian.html`
+   - Updated to use latest available year (2021) instead of hardcoded 2019
 
-4. **Visualizations**:
+4. **Visualizations**: ✅ Complete visualization suite
    - Forest plot of counterfactual effects with uncertainty bands
-   - Comparison plot: Bayesian (with uncertainty) vs. Elastic Net (point estimates)
+   - Two-panel plot (gap-closing vs gap-widening indicators)
+   - Bar chart sorted by magnitude
+   - All visualizations include uncertainty bands (94% HDI)
 
-5. **Documentation**: Update `bayesian_model_report.md` with counterfactual analysis section
+5. **Positive Contributions Over Time Analysis**: ✅ **NEW**
+   - **Function**: `compute_positive_contributions_over_time()` - Computes contributions of gap-closing factors over time
+   - **Function**: `plot_positive_contributions_stacked_area()` - Creates stacked area chart showing factor contributions
+   - **Function**: `plot_positive_contributions_percentage()` - Plots total positive contributions as percentage of actual gap
+   - **Implementation**: Added to both `bayes_counter_le.md` and `bayes_counter_hale.md`
+   - **Outputs**: 
+     - Stacked area charts: `figs/positive_contributions_stacked_usa_2021_le_bayesian.png`, etc.
+     - Percentage plots: `figs/positive_contributions_percentage_usa_2021_le_bayesian.png`, etc.
+     - HTML tables: `tables/positive_contributions_usa_2021_le_bayesian.html`, etc.
+
+6. **Documentation**: ✅ Updated `bayesian_model_report_2021.md` with counterfactual analysis section
    - Explain methodology
-   - Present results for example countries
-   - Compare with Elastic Net counterfactual results
+   - Present results for example countries (USA)
+   - Include all visualizations (forest, two-panel, bar charts)
+   - Include stacked area charts and percentage plots for positive contributions over time
    - Discuss policy implications with uncertainty quantification
+   - Report renamed: `bayesian_model_report_2021.md` (canonical model with COVID-19 data through 2021)
+   - Legacy report: `bayesian_model_report_2019.md` (pre-COVID analysis)
 
 
 
@@ -1521,7 +1603,9 @@ Adapt the Elastic Net counterfactual approach to the Bayesian panel model framew
 - ✅ Include comparison with cross-sectional model
 - ✅ Include posterior correlation analysis and interpretation
 - ✅ Updated JupyterBook configuration (`myst.yml`) and index (`index.md`) to include report
-- ⏳ Include counterfactual analysis results (pending Deliverable 4)
+- ✅ Include counterfactual analysis results (completed Deliverable 4)
+- ✅ Renamed reports: `bayesian_model_report_2021.md` (canonical, includes COVID-19 through 2021), `bayesian_model_report_2019.md` (legacy)
+- ✅ Updated `myst.yml` to include only the 2021 report in the build
 
 **Future Work (After Initial Implementation):**
 - ✅ Implemented same model for Life Expectancy gap
@@ -1567,7 +1651,7 @@ Adapt the Elastic Net counterfactual approach to the Bayesian panel model framew
   - Update output filenames to include "yesmid" or "nomid" suffix for comparison
 - ⏳ Test model extensions (year fixed effects, AR(1), random slopes)
 - ✅ Posterior predictive checks (see Deliverable 2)
-- ⏳ Counterfactual analysis with uncertainty quantification
+- ✅ Counterfactual analysis with uncertainty quantification (completed)
 
 
 ## Neoplasms (Cancer) Drilldown Analysis
