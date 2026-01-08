@@ -1,34 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="http://localhost:3001/sitemap_style.xsl" ?>
+<?xml-stylesheet type="text/xsl" href="http://localhost:3002/sitemap_style.xsl" ?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>http://localhost:3001</loc>
+    <loc>http://localhost:3002</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/summary</loc>
+    <loc>http://localhost:3002/summary</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/tech-report</loc>
+    <loc>http://localhost:3002/tech-report</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/data-inventory</loc>
+    <loc>http://localhost:3002/data-inventory</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/neoplasms-report</loc>
+    <loc>http://localhost:3002/neoplasms-report</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/eda-report</loc>
+    <loc>http://localhost:3002/eda-report</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/validation</loc>
+    <loc>http://localhost:3002/validation</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/time-series-report</loc>
+    <loc>http://localhost:3002/time-series-report</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/temporal</loc>
+    <loc>http://localhost:3002/temporal</loc>
   </url>
   <url>
-    <loc>http://localhost:3001/bayesian-model-report-2023</loc>
+    <loc>http://localhost:3002/bayesian-model-report-2023</loc>
   </url>
 </urlset>
